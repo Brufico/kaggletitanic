@@ -1,0 +1,365 @@
+---
+title: 'Titanic - Kaggle - Some exploration'
+subtitle: "Explore for classroom use"
+author:  "Bruno Fischer Colonimos"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+# header-includes: \usepackage{graphicx} # for unmodded template
+fontsize: 12pt
+urlcolor: "blue"   ## external
+linkcolor: "red" ## internal
+documentclass: article
+classoption: a4paper
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
+footer: \thetitle \ \textemdash \ \thepage 
+output:
+  # bookdown::pdf_document2:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    # keep_tex: true
+    fig_caption: yes
+    
+  # html_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+---
+
+----------------
+
+
+<!-- Some Inline HTML (CSS) , formatting tables -->
+
+<style>
+
+table {
+    width: 100%;
+    border-top-style: solid;
+    border-top-width: medium;
+    border-top-color: initial;
+    border-bottom-style: solid;
+    border-bottom-width: medium;
+    border-bottom-color: initial;
+}
+
+</style>
+
+<!-- End Inline HTML -->
+
+
+
+Preliminary code
+================
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.keep="all" ,fig.width=4, fig.asp= 0.75 , fig.align="center", fig.keep ="all", fig.show="hold", out.width="0.48\\textwidth")
+
+# , fig.align="center"
+# not for HTML : out.width="0.48\\textwidth"
+```
+
+
+## Required packages (install before running)
+
+"caret", "ggplot2", pander       
+
+
+
+## Libraries and auxiliary code (install before running)
+
+(Not fully echoed here)
+
+```{r}
+# adjust Gggplot2 theme and color palette
+bwtheme <- TRUE
+specialpalette <- TRUE # controls the colour of the plots
+```
+
+
+```{r libs, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+library(knitr)
+library(pander)
+library(caret)
+library(ggplot2)
+# library(party) #trees
+# library(ISLR) # example
+# 
+# library(ElemStatLearn)
+if (bwtheme) {
+        theme_set(theme_bw())
+}
+
+if (specialpalette) {
+        # palette color-blind-friendly: The palette with black (Cookbook for R,
+        # http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/)
+        cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+        
+        # modified BFC
+        cbfPalette <- cbbPalette
+        cbfPalette[3] <- cbbPalette[7]
+        cbfPalette[6] <- cbbPalette[3]
+        cbfPalette[8] <- cbbPalette[7]
+        
+        # * `set_default_scale` has been removed. If you want to change the default
+        # scale for an aesthetic, just create a function called
+        # `scale_aesthetic_continuous` or `scale_aesthetic_discrete` that returns the
+        # scale that you want. 
+        
+        scale_colour_discrete <- function(...) {
+                scale_colour_manual(values = cbbPalette, ...)
+        }
+        
+        scale_fill_discrete <- function(...) {
+                scale_fill_manual(values = cbbPalette, ...)
+        }
+        
+        scale_colour_continuous <- function(...) {
+                ggplot2::scale_colour_brewer("Greys", ...)
+        }
+        
+}
+
+```
+
+Data
+=====
+
+```{r dataget}
+
+datadir <-  "data"
+fname <-  "train.csv"
+
+tdf <- read.csv(file.path(datadir, fname))
+
+# get the chunk label
+chlabel <- knitr::opts_current$get("label")# does'nt work
+# verify
+paste0( "chlabel =", chlabel)
+# alternatives
+# chlabel <- knitr::opts_current$get()$label
+# paste0( "chlabel =", chlabel)
+# 
+# copts <- knitr::opts_current$get()
+# copts
+
+# tabcap <- function(caption, chunklabel = chlabel) {
+#         paste0("(#tab:", chunklabel, ")", caption)
+# }
+
+tabcap <- function(caption, chunklabel=knitr::opts_current$get("label")) {
+        paste0("(#tab:", chunklabel, ")", caption)
+}
+
+# pander(head(tdf), caption = "\\label{tab:dataget}A `Pander` table")
+# knitr::kable(head(tdf), caption = "A `knitr` table")
+# pander(head(tdf), caption = "(#tab:dataget) A `Pander` table")
+pander(head(tdf), caption = tabcap("A `Pander` table"))     
+```
+
+* Quick dataframe summary
+```{r datasum}
+# pander(summary(tdf), caption="( )Data Head")
+# knitr::kable(summary(tdf), caption="Data Head")
+# pander(summary(tdf), caption="(#tab:datasum)Data summaries")
+
+pander(summary(tdf), caption = tabcap("Data summaries"))
+
+```
+
+
+Variables organization
+=======================
+
+
+Variables                       Values                  Treatment
+------------------------        ---------------         ------------
+__Demographic variables__
+    * Sex                       female ; male           Make factor
+    * Age                       numeric
+__Family context__
+    * SibSp                     numeric                 Combined
+    * Parch                     numeric                 Combined
+    * Famly                     numeric                 new: SibSp + Parch
+__Relationship to ship__
+    * Pclass                    1,2,3                   Make factor
+    * ticket                    ticket number
+    * Fare                      numeric
+    * Cabin                     Cabin nbr               not used
+    * Embark                    C = Cherbourg,          Factor
+                                Q = Queenstown, 
+                                S = Southampton
+__Survival__              
+    * survived                  0/1                     Make factor
+
+```{r mantable1, echo=FALSE, results="asis"}
+tabcap("variable organization")
+```
+
+
+Data modifications
+==================
+
+* Make `Survived` and `Pclass` factors, 
+* Create `Famly` = `SibSp + Parch` 
+
+```{r datamod}
+sf <- factor(tdf$Survived, labels=c("No", "Yes"))
+# verification
+# head(tdf$Survived)
+# head(sf2)
+
+tdf$Survived <- sf
+
+# makefactor class
+tdf$Pclass <- factor(tdf$Pclass)
+
+# combine SibSp + Parch
+tdf$Famly <- tdf$SibSp + tdf$Parch
+
+tdf$Embarked <-  factor(tdf$Embarked)
+
+```
+
+
+
+
+Data Analysis
+==================
+
+Passenger Identity
+-------------------
+
+```{r ident1, out.width="0.32\\textwidth", warning=FALSE, fig.cap="Passenger Identity"}
+tbsex <- table(tdf$Sex)
+tbsex
+ggplot(tdf, aes(Sex)) + geom_bar()
+```
+
+```{r ident2, out.width="0.32\\textwidth", warning=FALSE, fig.cap="Passenger Identity contd."}
+sumAge <- summary(tdf$Age)
+
+nc <- nclass.Sturges(tdf$Age)
+ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
+ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + facet_grid(Sex ~ .)
+```
+
+__Family context__
+
+```{r family, out.width="0.32\\textwidth", fig.cap="Family members on board"}
+ggplot(tdf) + geom_bar(aes(SibSp))
+
+ggplot(tdf) + geom_bar(aes(Parch))
+
+ggplot(tdf) + geom_bar(aes(Famly))
+```
+
+Passenger class
+-------------------
+
+```{r ship, fig.cap="Passenger Classes"}
+pander(prop.table(table(tdf$Pclass)))
+ggplot(tdf) + geom_bar(aes(Pclass, fill = Pclass, y = ..count../sum(..count..) ))
+```
+
+```{r family-class, out.width="0.32\\textwidth", fig.cap="Passenger demographics by class"}
+ggplot(tdf, aes(Sex)) + 
+        geom_bar(aes(y = ..count../sum(..count..), fill = Pclass)) + 
+        facet_grid(Pclass ~ .) +
+        labs(y = "Proportion")
+
+nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+ggplot(tdf, aes(Age)) + 
+        geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
+        facet_grid(Pclass ~ .)
+
+ggplot(tdf, aes(Age)) + 
+        geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
+        facet_grid(Pclass ~ Sex)
+
+
+# ggplot(tdf) + geom_bar(aes(SibSp, y = ..prop..)) + facet_grid(Pclass ~ .)
+# ggplot(tdf) + geom_bar(aes(Parch)) + facet_grid(Pclass ~ .)
+
+ggplot(tdf) + 
+        geom_bar(aes(Famly, y = ..prop.., fill=Pclass)) +
+        facet_grid(Pclass ~ .)
+
+ggplot(tdf) + 
+        geom_bar(aes(Famly, y = ..prop.., fill=Pclass)) +
+        facet_grid(Pclass ~ Sex)
+```
+
+Compare with reference: \@ref(fig:ship)
+
+```{r fare}
+
+# ncf <- nclass.FD(tdf$Fare) 
+ncf <- 50
+ggplot(tdf) + geom_histogram(aes(Fare), bins = ncf)
+ggplot(tdf) + geom_histogram(aes(Fare, y=..density.., fill=Pclass), bins = ncf) + 
+        facet_grid(Pclass ~.) 
+```
+
+Survival
+--------
+
+## overall
+
+```{r survival}
+pander(prop.table(table(tdf$Survived)), digits=2)
+
+ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
+```
+
+## By category
+
+```{r survival-by}
+# by sex
+pander(prop.table(table(tdf$Survived, tdf$Sex),
+                  margin = 2),
+       digits=2)
+
+# by class
+pander(prop.table(table(tdf$Survived, tdf$Pclass),
+                  margin = 2),
+       digits=2)
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 
+        facet_grid(Sex ~.)
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., group = Pclass)) + 
+        facet_grid(Pclass ~.) 
+
+
+```
+
+Class and sex
+
+```{r survival-by2, fig.cap="Survival by Sex and Class"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex)
+```
+
+Two more lines, for just a try: 
+Citing references: 
+
+1. a figure: figure \@ref(fig:ship)
+2. and tables: data head table (table \@ref(tab:dataget)) and summary table (table \@ref(tab:datasum)) and table \@ref(tab:mantable1))
+
+
+
+** Bye-Bye **
+
+
+
