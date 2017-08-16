@@ -27,6 +27,7 @@ output:
   #   number_sections: yes
   #   toc: yes
   #   toc_depth: 4
+  #   fig_caption: yes
 ---
 
 ***************************
@@ -56,6 +57,9 @@ Preliminary code
 ================
 
 ```{r setup, include=FALSE}
+
+# Later
+# =======
 # knitr::opts_chunk$set(echo = TRUE, fig.keep="all" ,fig.width=4, fig.asp= 0.75 , fig.align="center", fig.keep ="all", fig.show="hold", out.width="0.48\\textwidth")
 
 # , fig.align="center"
@@ -90,226 +94,11 @@ library(dplyr)
 # library(ISLR) # example
 # 
 # library(ElemStatLearn)
-if (bwtheme) {
-        theme_set(theme_bw())
-}
 
-if (specialpalette) {
-        # palette color-blind-friendly: The palette with black (Cookbook for R,
-        # http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/)
-        cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
-                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-        
-        # modified BFC
-        cbfPalette <- cbbPalette
-        cbfPalette[3] <- cbbPalette[7]
-        cbfPalette[6] <- cbbPalette[3]
-        cbfPalette[8] <- cbbPalette[7]
-        
-        # * `set_default_scale` has been removed. If you want to change the default
-        # scale for an aesthetic, just create a function called
-        # `scale_aesthetic_continuous` or `scale_aesthetic_discrete` that returns the
-        # scale that you want. 
-        
-        scale_colour_discrete <- function(...) {
-                scale_colour_manual(values = cbbPalette, ...)
-        }
-        
-        scale_fill_discrete <- function(...) {
-                scale_fill_manual(values = cbbPalette, ...)
-        }
-        
-        scale_colour_continuous <- function(...) {
-                ggplot2::scale_colour_brewer("Greys", ...)
-        }
-        
-}
+# Source preparatory code
+# ========================
 
-
-
-# ** Some code *******
-#######################################################
-# Identify context: output type ***********************
-
-
-# From Hadley's ggplot2 book:  Knowing conversion target 
-is_latex <- function() {
-        identical(knitr::opts_knit$get("rmarkdown.pandoc.to"), "latex")
-}
-
-# html same
-is_html <- function() {
-        identical(knitr::opts_knit$get("rmarkdown.pandoc.to"), "html")
-}
-
-pdfoutput <- is_latex() # tells if we are converting through latex, ie to pdf
-
-# getcontext returns the doc conversion context
-getcontext <- function(){
-        if (is_latex()) {"latex" 
-                   } else if (is_html()) {
-                           "html"
-                   } else {"other"} 
-}
-
-
-# get the code chunk name (for captionning)
-
-chunkname <- function() {knitr::opts_current$get("label")}
-
-
-#######################################################
-# Captioning / cross-referencing ***********************
-
-
-# Table captions
-# tabcap <- function(caption,
-#                    chunklabel=knitr::opts_current$get("label"),
-#                    context=getcontext()) {
-#         
-#         switch(context,
-#                latex = paste0("\\label{tab:", chunklabel, "}",
-#                               caption),
-#                html = paste0("<div id=tab:", chunklabel, ">",
-#                              caption, "</div>"),
-#                other = caption ) 
-# }
-
-
-tabcap <- function(caption,
-                   chunklabel=knitr::opts_current$get("label"),
-                   context=getcontext()) {
-        
-        switch(context,
-               latex = paste0("\\label{tab:", chunklabel, "}",
-                              caption),
-               html = paste0("<a name=tab:", chunklabel, ">",
-                             caption, "</a>"),
-               other = caption ) 
-}
-
-
-
-
-
-
-
-# figure captions ?? ==> No, not needed with pdf_output
-figcap <- function(caption, chunklabel=knitr::opts_current$get("label")) {
-        # debug
-        # thislabel <<- chunklabel
-        paste0("\\label{fig:", chunklabel, "}", caption)
-}
-
-# tests
-
-# tabcap("one", "thzchunk", context = "latex")
-# tabcap("one", "thzchunk", context = "html")
-
-
-# inserting a reference to a label, using the context
-
-.ref <- function(prefix = NULL,
-                 reflabel = "",
-                 context = getcontext()) {
-        switch(EXPR = context,
-               latex = paste0("\\ref{",prefix, reflabel,"}"),
-               html = paste0("<A HREF=\\#",
-                              prefix, reflabel,
-                              "\\>", reflabel , "</A>"), # reflabel here ?
-               other = paste0("(#",prefix, reflabel ,")")
-        )
-}
-
-# .ref <- function(prefix = NULL, 
-#                  reflabel = "", 
-#                  context = getcontext()) {
-#         switch(EXPR = context,
-#                latex = paste0("\\ref{",prefix, reflabel,"}"),
-#                html = paste0("<a href= #", 
-#                               prefix, reflabel,
-#                               ">", reflabel , "</a>"), # reflabel here ?
-#                other = paste0("(#",prefix, reflabel ,")")
-#         )        
-# }
-
-
-
-
-
-
-# testit
-
-# .ref(prefix= "tab:",reflabel = "onelab", context =  "latex" )
-# .ref(prefix= "fig:", reflabel = "onelab", context = "html" )
-# .ref(reflabel = "onelab", context = "html" )
-# .ref(prefix= "fig:", reflabel = "onelab", context = "other" )
-
-
-#######################################################
-# figures dimensions parameters ***********************
-
-#   aspect ratio
-a.13 <- 1 / 3
-a.12 <- 0.5
-a.34 <- 0.75
-a.11 <- 1
-a.43 <- 1.33
-a.21 <- 2
-
-#  width
-# == doc line width in inches * security coeff 0.98
-
-doclinewidth <- (21 - 1.5 - 1.5) * 0.3937 * 0.98  # légère correction
-
-w.11 <-  doclinewidth
-w.34 <- 3 / 4 * doclinewidth
-w.23 <- 2 / 3 * doclinewidth
-w.12  <-  1 / 2 * doclinewidth
-w.13 <- 1 / 3 * doclinewidth
-w.14 <- 1 / 4 * doclinewidth * 0.99 # de nouveau: légère correction
-
-# #   output width (only pdf)
-# one3outwidth <- if (pdfoutput) {"0.32\\textwidth"} else {NULL}
-# halfoutwidth <- if (pdfoutput) {"0.48\\textwidth"} else {NULL}
-# two3outwidth <- if (pdfoutput) {"0.64\\textwidth"} else {NULL}
-# fulloutwidth <- if (pdfoutput) {"\\textwidth"} else {NULL}
-
-# configs pr?d?finies knitr::opts_template$set()
-
-.codeR <- paste0( "knitr::opts_template$set(",
-                  if (pdfoutput) {paste0(".f14 = list(fig.width = ", 
-                                         w.14, 
-                                         ", fig.asp = ", 
-                                         a.12, "), ")
-                          } else { # w.14 too narrow to render ok in html
-                                  paste0(".f14 = list(fig.width = ", 
-                                         w.13, 
-                                         ", fig.asp = ", 
-                                         a.34, "), ")
-                                  
-                          }  ,
-                  "f13 = list(fig.width = ", w.13, ", fig.asp = ", a.34, "), ",
-                  "f12 = list(fig.width = ", w.12, ", fig.asp = ", a.34, "), ",
-                  "fnorm = list(fig.width = ", w.23, ", fig.asp = ", a.34, "), ",
-                  "fnormsq = list(fig.width = ", w.23, ", fig.asp = ", a.11, "), ",
-                  "fnormhigh = list(fig.width = ", w.23, ", fig.asp = ", a.43, "), ",
-                  "fnormvhigh = list(fig.width = ", w.23, ", fig.asp = ", a.21, "), ",
-                  "fulllow = list(fig.width = ", w.11, ", fig.asp = ", a.34, "),",
-                  "full = list(fig.width = ", w.11, ", fig.asp = ", a.34, "),",
-                  "fullsq = list(fig.width = ", w.11, ", fig.asp = ", a.11, "),",
-                  "fullhigh = list(fig.width = ", w.11, ", fig.asp = ", a.43, "),",
-                  "fullvhigh = list(fig.width = ", w.11, ", fig.asp = ", a.21, ")",
-                  ")"
-)
-
-
-eval(parse(text = .codeR))  
-              
-              
-# verif
-# knitr::opts_template$get()
-# knitr::opts_template$get(".f14")
+source("preparation.R")
 
 # Set aliases
 knitr::set_alias(w = "fig.width", a = "fig.asp")
@@ -381,11 +170,9 @@ Data modifications {#modifs}
 * Create `Famly` = `SibSp + Parch` 
 
 
-```{r datamod}
+```{r datamod, warning=FALSE}
 sf <- factor(tdf$Survived, labels=c("No", "Yes"))
-# verification
-# head(tdf$Survived)
-# head(sf2)
+
 
 tdf$Survived <- sf
 
@@ -397,7 +184,7 @@ tdf$Famly <- tdf$SibSp + tdf$Parch
 
 tdf$Embarked[which(tdf$Embarked == "")] <- NA
 tdf$Embarked <-  factor(tdf$Embarked)
-levels(tdf$Embarked)
+# levels(tdf$Embarked)
 
 # ajout de variables
 tdf <- tdf %>%
@@ -418,7 +205,7 @@ Passenger Identity {#demographic}
 
 ### Sex and Age {#sexage}
 
-```{r ident1, warning=FALSE, fig.cap="Gender distribution"}
+```{r ident1, warning=FALSE, fig.cap="Gender distribution", fig.pos="H"}
 
 # opts.labels("f13"), fails
 
@@ -428,14 +215,16 @@ pander(tbsex, caption = tabcap("Gender distribution"))
 ggplot(tdf, aes(Sex)) + geom_bar()
 ```
 
+FIgure `r .ref("fig", "ident1")`
+
 ```{r ident2, warning=FALSE, fig.cap="Age and Gender"}
 sumAge <- summary(tdf$Age)
 ```
 
-Numerical summaries of Age : `r pander(sumAge)`
+Numerical summaries of Age : `r pander(sumAge, caption = "Age distribution")`
 
 ```{r ident3,  warning=FALSE, fig.cap="Age and Gender"}
-nc <- nclass.Sturges(tdf$Age)
+# nc <- nclass.Sturges(tdf$Age)
 nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
 ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
 ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
@@ -446,7 +235,7 @@ ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
 ```
 
-
+FIgure `r .ref("fig", "ident3")`
 
 
 Family members on board {#fmly}
@@ -462,19 +251,31 @@ pander(cor(tdf[ , c("SibSp","Parch","Famly")]), caption = tabcap("Family members
 ggplot(tdf) + geom_bar(aes(SibSp))
 ggplot(tdf) + geom_bar(aes(Parch))
 ggplot(tdf) + geom_bar(aes(Famly))
-
 ```
+
+FIgure `r .ref("fig", "family2")`
 
 Passenger class {#pclass}
 -------------------
 
+figure `r .ref("fig:", "ship")`
+
 ```{r ship,  fig.cap="Passenger Classes Distribution"}
-pander(prop.table(table(tdf$Pclass)), caption = tabcap("Class"))
+
+pander(local({
+        tb <- rbind(table(tdf$Pclass),
+                    prop.table(table(tdf$Pclass)))
+        
+        row.names(tb) = c("frequency", "rel.frequency")
+        tb}), 
+       caption = tabcap("Passenger Class (Pclass)"))
+
+
 
 ggplot(tdf) + geom_bar(aes(Pclass, fill = Pclass, group=1, y = ..prop.. ))
 ```
 
-```{r family-class,  fig.cap="Passenger demographics by class"}
+```{r family_class, fig.cap="Passenger demographics by class"}
 
 ggplot(tdf, aes(Sex)) + 
         geom_bar(aes(y = ..prop.., fill = Pclass, group=Pclass)) + 
@@ -514,15 +315,20 @@ ggplot(tdf) +
 
 ```
 
+FIgure `r .ref("fig", "family_class")`
 Compare with reference: "r .ref(fig:ship)"
 
 
-```{r Embarked, fig.cap="Embarked"}
-table(tdf$Embarked)
+```{r Embarked, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southamption)"}
 
-sum(is.na(tdf$Embarked))
+temb <- table(tdf$Embarked)
+ptemb <- prop.table(temb)
+df <- rbind(frequency = temb , Rfreq = ptemb) 
+pander(df, digits=2, caption = "Embarkation port")
 
-tdfx <- tdf[complete.cases(tdf), ]
+na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
+
+tdfx <- tdf[complete.cases(tdf), ] 
 
 ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=1))
 
@@ -535,11 +341,6 @@ ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Pclass)) + facet_grid(Pc
 ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Pclass)) +
         facet_grid(Pclass~Sex) +
         theme(legend.position = "none")
-
-
-
-
-
 ```
 
 
@@ -636,7 +437,7 @@ ggplot(tdfx[tdfx$Embarked == "S", ]) +
 
 ```
 
-Class and Age
+Class and Age see figure `r .ref("fig:survival-by4")`
 
 ```{r survival-by4, fig.cap="Age by Survival  and Class", warning=FALSE}
 
@@ -663,10 +464,18 @@ ggplot(tdf[tdf$Survived == "No", ]) +
 Class and agestat, agestat and sex
 
 ```{r survival-by5, fig.cap="Survival by age status, Class and sex"}
+
+agesex_class <- table(tdf$agestat, tdf$Sex, tdf$Pclass)
+pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
+
+
+
+
 ggplot(tdf[!is.na(tdf$agestat),]) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ agestat) + 
+        labs(title = "Sex = All") +
         theme(legend.position = "none")
 
 ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "female" ,]) + 
