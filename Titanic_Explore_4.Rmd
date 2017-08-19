@@ -173,7 +173,6 @@ Data modifications {#modifs}
 ```{r datamod, warning=FALSE}
 sf <- factor(tdf$Survived, labels=c("No", "Yes"))
 
-
 tdf$Survived <- sf
 
 # makefactor class
@@ -191,6 +190,14 @@ tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep ="."))
 
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
+
+# Ticket number begins with letters
+tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
+
+
+# hascabin is the cabin number nkown?
+tdf$hascabin <- as.numeric(tdf$Cabin != "")
+
 
 ```
 
