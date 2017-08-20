@@ -94,7 +94,7 @@ library(rpart, quietly = TRUE)
 library(randomForest, quietly = TRUE)
 library(MASS, quietly = TRUE)
 library(klaR, quietly = TRUE)
-
+library(fastAdaboost, quietly = TRUE)
 
 # library(party) #trees
 # library(ISLR) # example
@@ -234,23 +234,21 @@ tdf2 <- tdf2[complete.cases(tdf2), ]
 
 # **** PROBLEM: Later, we have an error : variables are collinear !! ***(OLD)
 
-cormat <- cor(tdf2[,-1])
-
-highlyCorDescr <- findCorrelation(cormat, cutoff = .90)
-
-hinames <- names(tdf2)[highlyCorDescr]
+# cormat <- cor(tdf2[,-1])
 # 
-# head(tdf[, hinames])
+# highlyCorDescr <- findCorrelation(cormat, cutoff = .90)
 # 
-# cor(data.frame(#tdf$hascabin,
-#                tdf$letticket,
-#                tdf$Pclass.1, 
-#                tdf$Pclass.2))
+# hinames <- names(tdf2)[highlyCorDescr]
+# # 
+# # head(tdf[, hinames])
+# # 
+# # cor(data.frame(#tdf$hascabin,
+# #                tdf$letticket,
+# #                tdf$Pclass.1, 
+# #                tdf$Pclass.2))
 
-
-
-
-findLinearCombos(tdf2[-1])
+# 
+# # findLinearCombos(tdf2[-1])
 
 
 ```
@@ -352,7 +350,7 @@ Model Building
 
 ### KNN
 
-```{r modelbuildknn, cache=TRUE, dependson=dataclean1}
+```{r modelbuildknn, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # Knn
 # 
@@ -392,7 +390,7 @@ recordmod$new(Name = "KNN",
 
 ### KNN-PCA
 
-```{r modelbuildknn_pca, cache=TRUE, dependson=dataclean1}
+```{r modelbuildknn_pca, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # Knn
 # 
@@ -433,7 +431,7 @@ recordmod$new(Name = "KNN_PCA",
 
 ### Random Forest
 
-```{r modelbuildrf, cache=TRUE, dependson=dataclean1}
+```{r modelbuildrf, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # Random Forests
 #  
@@ -476,7 +474,7 @@ recordmod$new(Name = "RF",
 
 ### Random Forest + PCA
 
-```{r modelbuildrf_pca, cache=TRUE, dependson=dataclean1}
+```{r modelbuildrf_pca, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # Random Forests - PCA
 #  
@@ -518,7 +516,7 @@ recordmod$new(Name = "RF_PCA",
 
 ### Glm
 
-```{r modelbuildglm, cache=TRUE, dependson=dataclean1}
+```{r modelbuildglm, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # glm
 # 
@@ -561,7 +559,7 @@ recordmod$new(Name = "GLM",
 
 ### Glm_pca
 
-```{r modelbuildglm_pca, cache=TRUE, dependson=dataclean1}
+```{r modelbuildglm_pca, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # glm
 # 
@@ -603,7 +601,7 @@ recordmod$new(Name = "GLM_PCA",
 
 ### Glm with interaction
 
-```{r modelbuildglm_pca, cache=TRUE, dependson=dataclean1}
+```{r modelbuildglm_int, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # glm
 # 
@@ -636,7 +634,7 @@ cm <- confusionMatrix(data = predict( modl ,
 
 recordmod$new(Name = "GLM_INT", 
               Method = modl$method, 
-              Preprocess = "pca",
+              Preprocess = "None",
               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
               Accuracy.CV = round(max(modl$results$Accuracy),3),
               Accuracy.validation = round(cm$overal["Accuracy"],3),
@@ -647,7 +645,7 @@ recordmod$new(Name = "GLM_INT",
 
 ### LDA
 
-```{r modelbuildlda, cache=TRUE, dependson=dataclean1}
+```{r modelbuildlda, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # lda
 # 
@@ -686,7 +684,7 @@ recordmod$new(Name = "LDA",
 
 ### LDA-PCA
 
-```{r modelbuildlda, cache=TRUE, dependson=dataclean1}
+```{r modelbuildlda_pca, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # lda
 # 
@@ -708,7 +706,7 @@ modl <- modlda_pca <- train(Survived ~ . , data = trainingset,
 ```
 
 
-```{r modelbuildldarec}
+```{r modelbuildlda_pca_rec}
 # record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
@@ -726,7 +724,7 @@ recordmod$new(Name = "LDA_PCA",
 
 ### QDA
 
-```{r modelbuildqda, cache=TRUE, dependson=dataclean1}
+```{r modelbuildqda, cache=TRUE, dependson="dataclean1"}
 # _______________________________
 # qda
 # 
@@ -766,7 +764,7 @@ recordmod$new(Name = "QDA",
 
 ### Naive Bayes
 
-```{r modelbuildnb, cache=TRUE, dependson=dataclean1, warning=FALSE}
+```{r modelbuildnb, cache=TRUE, dependson="dataclean1", warning=FALSE}
 # _______________________________
 # nb = naive Bayes
 # 
@@ -806,7 +804,7 @@ recordmod$new(Name = "NB",
 
 ### Naive Bayes - PCA
 
-```{r modelbuildnb_pca, cache=TRUE, dependson=dataclean1, warning=FALSE}
+```{r modelbuildnb_pca, cache=TRUE, dependson="dataclean1", warning=FALSE}
 # _______________________________
 # nb = naive Bayes - PCA
 # 
@@ -908,9 +906,9 @@ stk_valid_df = data.frame(
 
 ### stacked predictions
 
-### With RF
+#### Combined With RF
 
-```{r modelbuild_stk_rf}
+```{r modelbuild_stk_rf, cache=TRUE}
 # stkrf Stacked preds with rf
 # 
 # parallel processing
@@ -949,9 +947,9 @@ recordmod$new( i = 2,
 
 
 
-### With adaboost
+#### Combined With adaboost
 
-```{r modelbuild_stk_ada}
+```{r modelbuild_stk_ada, cache=TRUE}
 # stkrf Stacked preds with rf
 # 
 # parallel processing
@@ -972,7 +970,7 @@ registerDoSEQ()
 
 
 
-```{r modelbuild_stk_rf_rec}
+```{r modelbuild_stk_ada_rec}
 # record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=stk_valid_df, type="raw"),
                 reference = validationset$Survived)
