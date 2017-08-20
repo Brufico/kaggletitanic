@@ -93,6 +93,7 @@ library(doParallel, quietly = TRUE)
 library(rpart, quietly = TRUE)
 library(randomForest, quietly = TRUE)
 library(MASS, quietly = TRUE)
+library(klaR, quietly = TRUE)
 
 
 # library(party) #trees
@@ -157,7 +158,7 @@ __Survival__
 
 
 Data modifications {#modifs}
--------------------
+----------------------------
 
 * Make `Survived` , `Pclass` and `Embark`   factors, 
 * Create `Famly` = `SibSp + Parch` 
@@ -165,8 +166,6 @@ Data modifications {#modifs}
 
 ```{r datamod, warning=FALSE}
 sf <- factor(tdf$Survived, labels=c("No", "Yes"))
-
-
 tdf$Survived <- sf
 
 # makefactor class
@@ -188,7 +187,7 @@ tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "ad
 
 ```
 
-### Cleaning: removing superfluous variables
+### Cleaning: transforming covariates, removing superfluous variables
 
 ```{r dataclean1, warning= FALSE}
 # let_ticket = are letters included in the ticket number
@@ -218,10 +217,10 @@ tdf <- cbind(tdf, dumvars)
 
 
 tdf2 <- tdf[, c("Survived", 
-                "Age", "SibSp" ,"Parch","Fare", # "Cabin", "Embarked",   
-                "letticket", 
-                "hascabin", 
-                "Pclass.1", "Pclass.2", "Sex.male")]
+                "Age", "SibSp" ,"Parch","Fare", # "Cabin", 
+                # "Embarked",   
+                "letticket",  "hascabin", 
+                "Pclass.1", "Pclass.2", "Sex.male", "Embarked.C",  "Embarked.Q")]
 
 
 
@@ -231,6 +230,9 @@ tdf2 <- tdf[, c("Survived",
 
 tdf2 <- tdf2[complete.cases(tdf2), ]
 
+
+
+# **** PROBLEM: Later, we have an error : variables are collinear !! ***(OLD)
 
 cormat <- cor(tdf2[,-1])
 
@@ -246,7 +248,10 @@ hinames <- names(tdf2)[highlyCorDescr]
 #                tdf$Pclass.2))
 
 
-# **** PROBLEM: Later, we have an error : variables are collinear !! ***********
+
+
+findLinearCombos(tdf2[-1])
+
 
 ```
 
@@ -254,7 +259,7 @@ hinames <- names(tdf2)[highlyCorDescr]
 
 ### Splitting data
 
-```{r}
+```{r datasplit}
 set.seed(globalseed)
 intrain <- createDataPartition(y=tdf2$Survived,
                                p= percenttraining,
@@ -347,7 +352,7 @@ Model Building
 
 ### KNN
 
-```{r modelbuildknn, cache=TRUE}
+```{r modelbuildknn, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # Knn
 # 
@@ -387,7 +392,7 @@ recordmod$new(Name = "KNN",
 
 ### KNN-PCA
 
-```{r modelbuildknn, cache=TRUE}
+```{r modelbuildknn_pca, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # Knn
 # 
@@ -397,7 +402,7 @@ recordmod$new(Name = "KNN",
 
 
 set.seed(globalseed)
-modl <- modknn <- train(Survived ~ . , data = trainingset,
+modl <- modknn_pca <- train(Survived ~ . , data = trainingset,
                         method = "knn",
                         preProcess = "pca",
                         trControl = trainControl(method = "cv",
@@ -409,13 +414,13 @@ modl <- modknn <- train(Survived ~ . , data = trainingset,
 ```
 
 
-```{r modelbuildknnrec}
+```{r modelbuildknnrec_pca}
 # record attempt
 # modl
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
 
-recordmod$new(Name = "KNN-PCA", 
+recordmod$new(Name = "KNN_PCA", 
               Method = modl$method, 
               Preprocess = "Pca",
               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
@@ -428,7 +433,7 @@ recordmod$new(Name = "KNN-PCA",
 
 ### Random Forest
 
-```{r modelbuildrf, cache=TRUE}
+```{r modelbuildrf, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # Random Forests
 #  
@@ -471,7 +476,7 @@ recordmod$new(Name = "RF",
 
 ### Random Forest + PCA
 
-```{r modelbuildrf, cache=TRUE}
+```{r modelbuildrf_pca, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # Random Forests - PCA
 #  
@@ -482,7 +487,7 @@ registerDoParallel(cluster)
 
 
 set.seed(globalseed)
-modl <- modrf <- train(Survived ~ . , data = trainingset,
+modl <- modrf_pca <- train(Survived ~ . , data = trainingset,
                         method = "rf",
                         preProcess = "pca",
                         trControl = trainControl(method = "cv",
@@ -494,13 +499,13 @@ registerDoSEQ()
 ```
 
 
-```{r modelbuildrfrec}
+```{r modelbuildrfrec_pca}
 # record attempt
 # modl
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
 
-recordmod$new(Name = "RF-PCA", 
+recordmod$new(Name = "RF_PCA", 
               Method = modl$method, 
               Preprocess = "PCA",
               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
@@ -513,7 +518,7 @@ recordmod$new(Name = "RF-PCA",
 
 ### Glm
 
-```{r modelbuildglm, cache=TRUE}
+```{r modelbuildglm, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # glm
 # 
@@ -553,9 +558,96 @@ recordmod$new(Name = "GLM",
 ```
 
 
+
+### Glm_pca
+
+```{r modelbuildglm_pca, cache=TRUE, dependson=dataclean1}
+# _______________________________
+# glm
+# 
+# parallel processing
+# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# registerDoParallel(cluster)
+
+
+set.seed(globalseed)
+modl <- modglm_pca <- train(Survived ~ . , data = trainingset,
+                        method = "glm",
+                       family = "binomial",
+                        preProcess = "pca",
+                        trControl = trainControl(method = "cv",
+                                                 number = nfolds))
+
+# stop parallel proc.
+# stopCluster(cluster)
+# registerDoSEQ()
+```
+
+
+```{r modelbuildglm_pca_rec}
+# record attempt
+cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
+                reference = validationset$Survived)
+
+recordmod$new(Name = "GLM_PCA", 
+              Method = modl$method, 
+              Preprocess = "pca",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modglm_pca" )
+
+# recordmod$get()
+```
+
+
+### Glm with interaction
+
+```{r modelbuildglm_pca, cache=TRUE, dependson=dataclean1}
+# _______________________________
+# glm
+# 
+# parallel processing
+# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# registerDoParallel(cluster)
+
+
+set.seed(globalseed)
+modl <- modglm_int <- train(Survived ~ Age + SibSp + Parch + Fare + letticket + hascabin + Pclass.1 + Pclass.2 + Sex.male + Embarked.C + Embarked.Q + Age * Pclass.1 + Age * Pclass.2 + Age * Sex.male * Pclass.1 + + Age * Sex.male * Pclass.2,
+                            data = trainingset,
+                            method = "glm",
+                            family = "binomial",
+                            # preProcess = "pca",
+                            trControl = trainControl(method = "cv",
+                                                     number = nfolds))
+
+# stop parallel proc.
+# stopCluster(cluster)
+# registerDoSEQ()
+```
+
+
+```{r modelbuildglm_int_rec}
+# record attempt
+cm <- confusionMatrix(data = predict( modl , 
+                                      newdata=validationset, 
+                                      type="raw"),
+                      reference = validationset$Survived)
+
+recordmod$new(Name = "GLM_INT", 
+              Method = modl$method, 
+              Preprocess = "pca",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modglm_int" )
+
+# recordmod$get()
+```
+
 ### LDA
 
-```{r modelbuildlda, cache=TRUE}
+```{r modelbuildlda, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # lda
 # 
@@ -592,10 +684,49 @@ recordmod$new(Name = "LDA",
 # recordmod$get()
 ```
 
+### LDA-PCA
+
+```{r modelbuildlda, cache=TRUE, dependson=dataclean1}
+# _______________________________
+# lda
+# 
+# parallel processing
+# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# registerDoParallel(cluster)
+
+
+set.seed(globalseed)
+modl <- modlda_pca <- train(Survived ~ . , data = trainingset,
+                        method = "lda",
+                        preProcess = "pca",
+                        trControl = trainControl(method = "cv",
+                                                 number = nfolds))
+
+# stop parallel proc.
+# stopCluster(cluster)
+# registerDoSEQ()
+```
+
+
+```{r modelbuildldarec}
+# record attempt
+cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
+                reference = validationset$Survived)
+
+recordmod$new(Name = "LDA_PCA", 
+              Method = modl$method, 
+              Preprocess = "pca",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modlda" )
+
+# recordmod$get()
+```
 
 ### QDA
 
-```{r modelbuildqda, cache=TRUE, eval=FALSE}
+```{r modelbuildqda, cache=TRUE, dependson=dataclean1}
 # _______________________________
 # qda
 # 
@@ -627,7 +758,7 @@ recordmod$new(Name = "QDA",
               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
               Accuracy.CV = round(max(modl$results$Accuracy),3),
               Accuracy.validation = round(cm$overal["Accuracy"],3),
-              Model.name = "modqda" )
+              Model.name = "modlda_pca" )
 
 # recordmod$get()
 ```
@@ -635,7 +766,7 @@ recordmod$new(Name = "QDA",
 
 ### Naive Bayes
 
-```{r modelbuildnb, cache=TRUE, warning=FALSE}
+```{r modelbuildnb, cache=TRUE, dependson=dataclean1, warning=FALSE}
 # _______________________________
 # nb = naive Bayes
 # 
@@ -672,6 +803,48 @@ recordmod$new(Name = "NB",
 # recordmod$get()
 ```
 
+
+### Naive Bayes - PCA
+
+```{r modelbuildnb_pca, cache=TRUE, dependson=dataclean1, warning=FALSE}
+# _______________________________
+# nb = naive Bayes - PCA
+# 
+# parallel processing
+# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# registerDoParallel(cluster)
+
+
+set.seed(globalseed)
+modl <- modnb_pca <- train(Survived ~ . , data = trainingset,
+                        method = "nb",
+                        preProcess = "pca",
+                        trControl = trainControl(method = "cv",
+                                                 number = nfolds))
+
+# stop parallel proc.
+# stopCluster(cluster)
+# registerDoSEQ()
+```
+
+
+```{r modelbuildnbrec_pca, warning=FALSE}
+# record attempt
+cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
+                reference = validationset$Survived)
+
+recordmod$new(Name = "NB_PCA", 
+              Method = modl$method, 
+              Preprocess = "None",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modnb_pca" )
+
+# recordmod$get()
+```
+
+
 Summary of models
 ---------------
 
@@ -686,17 +859,34 @@ kable(recordmod$get(), row.names = FALSE, caption = "Base models accuracy")
 Stacking models
 ---------------
 
+### Base models to stack
+
+```{r}
+basemods <- data.frame(model= c(
+        "modknn_pca", 
+        "modrf",
+        "modglm",
+        "modlda_pca",
+        "modqda",
+        "modnb_pca")
+)
+
+```
+
+
+
 ### predictions from base models
 
 ```{r basepreds, warning=FALSE}
 # trainingset
 stk_train_df = data.frame(
-        p_knn = predict(modknn, newdata = trainingset, type="prob"),
+        p_knn = predict(modknn_pca, newdata = trainingset, type="prob"),
         p_rf = predict(modrf, newdata = trainingset, type="prob"),
         p_glm = predict(modglm, newdata = trainingset, type="prob"),
-        p_lda = predict(modlda, newdata = trainingset, type="prob"),
+        p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
+        p_lda = predict(modlda_pca, newdata = trainingset, type="prob"),
         p_qda = predict(modqda, newdata = trainingset, type="prob"),
-        p_nb = predict(modnb, newdata = trainingset, type="prob"),
+        p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
         Survived =trainingset$Survived
 )
 
@@ -705,6 +895,7 @@ stk_valid_df = data.frame(
         p_knn = predict(modknn, newdata = validationset, type="prob"),
         p_rf = predict(modrf, newdata = validationset, type="prob"),
         p_glm = predict(modglm, newdata = validationset, type="prob"),
+        p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
         p_lda = predict(modlda, newdata = validationset, type="prob"),
         p_qda = predict(modqda, newdata = validationset, type="prob"),
         p_nb = predict(modnb, newdata = validationset, type="prob"),
@@ -755,6 +946,49 @@ recordmod$new( i = 2,
               Model.name = "modstkrf" )
 
 ```
+
+
+
+### With adaboost
+
+```{r modelbuild_stk_ada}
+# stkrf Stacked preds with rf
+# 
+# parallel processing
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+
+set.seed(globalseed)
+modl <- modstk_ada <- train(Survived ~ . , data = stk_train_df,
+                        method = "adaboost",
+                        trControl = trainControl(method = "cv",
+                                                 number = nfolds))
+
+# stop parallel proc.
+stopCluster(cluster)
+registerDoSEQ()
+```
+
+
+
+```{r modelbuild_stk_rf_rec}
+# record attempt
+cm <- confusionMatrix(data = predict( modl , newdata=stk_valid_df, type="raw"),
+                reference = validationset$Survived)
+
+recordmod$new( i = 2,
+              Name = "Stacked adaboost", 
+              Method = modl$method, 
+              Preprocess = "None",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modstk_ada" )
+
+```
+
+
 
 ```{r}
 kable(recordmod$get(i=2), row.names = FALSE, caption = "Stacked RF")
