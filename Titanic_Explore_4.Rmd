@@ -4,6 +4,7 @@ subtitle: "Explore for classroom use"
 author:  "Bruno Fischer Colonimos"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 # header-includes: \usepackage{graphicx} # for unmodded template
+header-includes: \usepackage{float} # for fig.pos = 'H'
 fontsize: 12pt
 urlcolor: "blue"   ## external
 linkcolor: "red" ## internal
@@ -22,6 +23,7 @@ output:
     toc_depth: 4
     # keep_tex: true
     fig_caption: yes
+    keep_tex: yes
     
   # html_document:
   #   number_sections: yes
@@ -56,7 +58,7 @@ table {
 Preliminary code
 ================
 
-```{r setup, include=FALSE}
+```{r setup0, include=FALSE}
 
 # Later
 # =======
@@ -77,23 +79,21 @@ Preliminary code
 
 (Not fully echoed here)
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 # adjust Gggplot2 theme and color palette
-bwtheme <- TRUE
+bwtheme <- TRUE # use ggplot2 bw -theme
 specialpalette <- TRUE # controls the colour of the plots
+showarning <- TRUE # show warnings (deleted empty rows...)
 ```
 
 
-```{r libs, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+```{r libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
 library(knitr)
 library(pander)
 library(caret)
 library(ggplot2)
 library(dplyr)
-# library(party) #trees
-# library(ISLR) # example
-# 
-# library(ElemStatLearn)
+
 
 # Source preparatory code
 # ========================
@@ -103,10 +103,11 @@ source("preparation.R")
 # Set aliases
 knitr::set_alias(w = "fig.width", a = "fig.asp")
 
+```
+
+```{r setup}
 # default options
-knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold")
-
-
+knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
 ```
 
 Data
@@ -153,7 +154,8 @@ __Relationship to ship__
     * Pclass                             1,2,3              Make factor
     * ticket                            ticket number       not used
     * Fare                 numeric
-    * Cabin                             Cabin nbr           not used
+    * Cabin                             Cabin nbr           modified -> Deck
+    * Deck                 String                           new (from Cabin)
     * Embark               Factor       C = Cherbourg,          
                                         Q = Queenstown, 
                                         S = Southampton
@@ -199,6 +201,18 @@ tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS
 tdf$hascabin <- as.numeric(tdf$Cabin != "")
 
 
+# Deck (from https://triangleinequality.wordpress.com/2013/09/08/basic-feature-engineering-with-the-titanic-data/)
+
+#This is going be very similar, we have a ‘Cabin’ column not doing much, only
+#1st class passengers have cabins, the rest are ‘Unknown’. A cabin number looks
+#like ‘C123’. The letter refers to the deck, and so we’re going to extract these
+#just like the titles. Turning cabin number into Deck
+#
+# cabin_list <- c('A', 'B', 'C', 'D', 'E', 'F', 'T', 'G', 'Unknown')
+# df[,'Deck']=df[,'Cabin'].map(lambda x: substrings_in_string(x, cabin_list))
+
+tdf$Deck <- factor(ifelse( tdf$Cabin != "", substr(tdf$Cabin,start=1,stop = 1), "Unknown"))
+
 ```
 
 
@@ -212,7 +226,7 @@ Passenger Identity {#demographic}
 
 ### Sex and Age {#sexage}
 
-```{r ident1, warning=FALSE, fig.cap="Gender distribution", fig.pos="H"}
+```{r ident1, warning=FALSE, fig.cap="Gender distribution"}
 
 # opts.labels("f13"), fails
 
@@ -222,7 +236,7 @@ pander(tbsex, caption = tabcap("Gender distribution"))
 ggplot(tdf, aes(Sex)) + geom_bar()
 ```
 
-FIgure `r .ref("fig", "ident1")`
+FIgure `r .ref("fig:ident1")`
 
 ```{r ident2, warning=FALSE, fig.cap="Age and Gender"}
 sumAge <- summary(tdf$Age)
@@ -242,7 +256,7 @@ ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
 ```
 
-FIgure `r .ref("fig", "ident3")`
+FIgure `r .ref("fig:", "ident3")`
 
 
 Family members on board {#fmly}
@@ -260,7 +274,7 @@ ggplot(tdf) + geom_bar(aes(Parch))
 ggplot(tdf) + geom_bar(aes(Famly))
 ```
 
-FIgure `r .ref("fig", "family2")`
+FIgure `r .ref("fig:", "family2")`
 
 Passenger class {#pclass}
 -------------------
@@ -322,11 +336,28 @@ ggplot(tdf) +
 
 ```
 
-FIgure `r .ref("fig", "family_class")`
-Compare with reference: "r .ref(fig:ship)"
+FIgure `r .ref("fig:", "family_class")`
+Compare with reference: `r .ref("fig:ship")`
 
 
-```{r Embarked, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southamption)"}
+```{r Deck}
+ggplot(tdf) +
+        geom_bar(aes(Deck, y=..prop.., group = 1))
+
+ggplot(tdf[tdf$Deck != "Unknown",] ) +
+        geom_bar(aes(Deck, y=..prop.., group = 1))
+
+ggplot(tdf[tdf$Deck != "Unknown",] ) +
+        geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = Pclass)) + 
+        facet_grid(Pclass ~ .)        
+
+ggplot(tdf[tdf$Deck != "Unknown",] ) +
+        geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = 1)) + 
+        facet_grid(Pclass ~ .)    
+```
+
+
+```{r Embarked, a= a.43, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southamption)"}
 
 temb <- table(tdf$Embarked)
 ptemb <- prop.table(temb)
@@ -342,11 +373,16 @@ ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=1))
 ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Sex)) + facet_grid(.~Sex) +
         theme(legend.position = "none")
 
-ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Pclass)) + facet_grid(Pclass~.) +
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass,  group=Pclass)) + 
+        facet_grid(Pclass~.) +
         theme(legend.position = "none")
 
-ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Pclass)) +
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Pclass)) +
         facet_grid(Pclass~Sex) +
+        theme(legend.position = "none")
+
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Deck)) +
+        facet_grid(Deck~Sex) +
         theme(legend.position = "none")
 ```
 
@@ -470,7 +506,7 @@ ggplot(tdf[tdf$Survived == "No", ]) +
 
 Class and agestat, agestat and sex
 
-```{r survival-by5, fig.cap="Survival by age status, Class and sex"}
+```{r survival-by5, w = w.12, a=a.43, fig.cap="Survival by age status, Class and sex, Deck, age and Sex"}
 
 agesex_class <- table(tdf$agestat, tdf$Sex, tdf$Pclass)
 pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
@@ -497,6 +533,13 @@ ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) +
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ agestat)+
         labs(title = "Sex = 'male'") + 
+        theme(legend.position = "none")
+
+ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Deck ~ agestat)+
+        labs(title = "by Deck") + 
         theme(legend.position = "none")
 
 ```

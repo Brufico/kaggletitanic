@@ -66,7 +66,7 @@ nfolds <- 5 # k = number of folds fork-folds crossvalidation
 
 ## Required packages (install before running)
 
-"caret", "ggplot2", pander       
+"caret", "ggplot2", pander, doParallel    
 
 
 
