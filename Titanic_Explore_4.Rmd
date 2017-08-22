@@ -212,7 +212,8 @@ tdf$hascabin <- as.numeric(tdf$Cabin != "")
 # df[,'Deck']=df[,'Cabin'].map(lambda x: substrings_in_string(x, cabin_list))
 
 tdf$Deck <- factor(ifelse( tdf$Cabin != "", substr(tdf$Cabin,start=1,stop = 1), "Unknown"))
-
+tdf$Deck <- relevel(tdf$Deck, ref = "T")
+# levels(tdf$Deck)
 ```
 
 
@@ -349,11 +350,8 @@ ggplot(tdf[tdf$Deck != "Unknown",] ) +
 
 ggplot(tdf[tdf$Deck != "Unknown",] ) +
         geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = Pclass)) + 
-        facet_grid(Pclass ~ .)        
-
-ggplot(tdf[tdf$Deck != "Unknown",] ) +
-        geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = 1)) + 
-        facet_grid(Pclass ~ .)    
+        facet_grid(Pclass ~ .) + theme(legend.position = "none")        
+ 
 ```
 
 
@@ -506,7 +504,7 @@ ggplot(tdf[tdf$Survived == "No", ]) +
 
 Class and agestat, agestat and sex
 
-```{r survival-by5, w = w.12, a=a.43, fig.cap="Survival by age status, Class and sex, Deck, age and Sex"}
+```{r survival-by5, fig.cap="Survival by age status, Class and sex"}
 
 agesex_class <- table(tdf$agestat, tdf$Sex, tdf$Pclass)
 pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
@@ -535,13 +533,16 @@ ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) +
         labs(title = "Sex = 'male'") + 
         theme(legend.position = "none")
 
-ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Deck ~ agestat)+
-        labs(title = "by Deck") + 
-        theme(legend.position = "none")
+```
 
+
+```{r survival_by6, w = w.23, fig.asp = 2, fig.cap="Survival by Deck, age and Sex"}
+
+ggplot(tdf[!is.na(tdf$agestat),]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Pclass))+ 
+        facet_grid(Deck ~ agestat)+
+        labs(title = "by Deck") # + theme(legend.position = "none")
 ```
 
 
