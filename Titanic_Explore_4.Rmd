@@ -183,7 +183,10 @@ tdf$Pclass <- factor(tdf$Pclass)
 # combine SibSp + Parch
 tdf$Famly <- tdf$SibSp + tdf$Parch
 
-tdf$Embarked[which(tdf$Embarked == "")] <- NA
+# which(is.na(tdf$Embarked))
+tdf$Embarked[which(tdf$Embarked == "")] <- "Unknown"
+tdf$Embarked[which(is.na(tdf$Embarked))] <- "Unknown"
+
 tdf$Embarked <-  factor(tdf$Embarked)
 # levels(tdf$Embarked)
 
@@ -192,7 +195,7 @@ tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep ="."))
 
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
-
+tdf$agestat <- ifelse(is.na(tdf$agestat), "Unknown", tdf$agestat)
 # Ticket number begins with letters
 tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
 
@@ -211,9 +214,16 @@ tdf$hascabin <- as.numeric(tdf$Cabin != "")
 # cabin_list <- c('A', 'B', 'C', 'D', 'E', 'F', 'T', 'G', 'Unknown')
 # df[,'Deck']=df[,'Cabin'].map(lambda x: substrings_in_string(x, cabin_list))
 
-tdf$Deck <- factor(ifelse( tdf$Cabin != "", substr(tdf$Cabin,start=1,stop = 1), "Unknown"))
+tdf$Deck <- factor(ifelse( tdf$Cabin != "", 
+                           substr(tdf$Cabin,start = 1,stop = 1), 
+                           "Unknown"))
 tdf$Deck <- relevel(tdf$Deck, ref = "T")
 # levels(tdf$Deck)
+
+numna <- sapply(tdf,
+       FUN = function(x){sum(is.na(x))} )
+
+pander(t(numna))
 ```
 
 
