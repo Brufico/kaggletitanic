@@ -87,7 +87,9 @@ showarning <- TRUE # show warnings (deleted empty rows...)
 ```
 
 
+
 ```{r libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+
 library(knitr)
 library(pander)
 library(caret)
@@ -120,7 +122,7 @@ Get it
 # read
 datadir <-  "data"
 fname <-  "train.csv"
-tdf <- read.csv(file.path(datadir, fname))
+tdf <- read.csv(file.path(datadir, fname), stringsAsFactors = FALSE)
 
 ```
  
@@ -174,7 +176,6 @@ Data modifications {#modifs}
 
 ```{r datamod, warning=FALSE}
 sf <- factor(tdf$Survived, labels=c("No", "Yes"))
-
 tdf$Survived <- sf
 
 # makefactor class
@@ -183,19 +184,27 @@ tdf$Pclass <- factor(tdf$Pclass)
 # combine SibSp + Parch
 tdf$Famly <- tdf$SibSp + tdf$Parch
 
-# which(is.na(tdf$Embarked))
+# Embarked
 tdf$Embarked[which(tdf$Embarked == "")] <- "Unknown"
-tdf$Embarked[which(is.na(tdf$Embarked))] <- "Unknown"
-
 tdf$Embarked <-  factor(tdf$Embarked)
+levels(tdf$Embarked)
 # levels(tdf$Embarked)
 
 # ajout de variables
 tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep ="."))
 
+
+## Problemes !!!!!
+
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
+
+tdf$agestat <- as.character(tdf$agestat)
 tdf$agestat <- ifelse(is.na(tdf$agestat), "Unknown", tdf$agestat)
+tdf$agestat <- factor(tdf$agestat, levels = c("child", "teen", "adult", "unknown"))
+levels(tdf$agestat)
+table(tdf$agestat)
+
 # Ticket number begins with letters
 tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
 
