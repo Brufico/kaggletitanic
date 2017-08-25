@@ -147,7 +147,7 @@ Variables                 type        Values                Treatment
 ------------------------  --------    -------------------   ------------------
 __Demographic variables__
     * Sex                  String       female ; male       Make factor
-    * Age                  numeric
+    * Age                  numeric                          many NA's
     * Agestat              factor      enfant/ado/adulte    new:
 __Family context__
     * SibSp                numeric                          Combined ->
@@ -159,7 +159,7 @@ __Relationship to ship__
     * Fare                 numeric
     * Cabin                             Cabin nbr           modified -> Deck
     * Deck                 String                           new (from Cabin)
-    * Embark               Factor       C = Cherbourg,          
+    * Embark               String       C = Cherbourg,       make Factor   
                                         Q = Queenstown, 
                                         S = Southampton
 __Survival__              
@@ -188,21 +188,18 @@ tdf$Famly <- tdf$SibSp + tdf$Parch
 # Embarked
 tdf$Embarked[which(tdf$Embarked == "")] <- datmis
 tdf$Embarked <-  factor(tdf$Embarked)
-levels(tdf$Embarked)
+# levels(tdf$Embarked)
 # levels(tdf$Embarked)
 
 # ajout de variables
 tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep ="."))
 
-
-## Problemes résolus
-
+# age status
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
 
 tdf$agestat <- as.character(tdf$agestat)
 tdf$agestat <- ifelse(is.na(tdf$agestat), datmis, tdf$agestat)
-# tdf$agestat <- factor(tdf$agestat, levels = c("child", "teen", "adult", datmis))
 tdf$agestat <- factor(tdf$agestat)
 # levels(tdf$agestat)
 # table(tdf$agestat)
@@ -362,7 +359,7 @@ FIgure `r .ref("fig:", "family_class")`
 Compare with reference: `r .ref("fig:ship")`
 
 
-```{r Deck}
+```{r Deck, fig.cap= "Distribution of decks"}
 ggplot(tdf) +
         geom_bar(aes(Deck, y=..prop.., group = 1))
 
@@ -383,9 +380,11 @@ ptemb <- prop.table(temb)
 df <- rbind(frequency = temb , Rfreq = ptemb) 
 pander(df, digits=2, caption = "Embarkation port")
 
-na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
+# na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
+# 
+# tdfx <- tdf[complete.cases(tdf), ] 
 
-tdfx <- tdf[complete.cases(tdf), ] 
+tdfx <- tdf 
 
 ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=1))
 
@@ -400,7 +399,8 @@ ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Pclass)) 
         facet_grid(Pclass~Sex) +
         theme(legend.position = "none")
 
-ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Deck)) +
+ggplot(tdfx) + 
+        geom_bar(aes(Embarked, y=..prop.., fill = Pclass)) +
         facet_grid(Deck~Sex) +
         theme(legend.position = "none")
 ```
@@ -421,6 +421,17 @@ ggplot(tdf) + geom_boxplot(aes(Pclass,Fare, fill = Pclass), color = "grey50") +
         facet_grid(Sex ~.) 
 ```
 
+```{r faredeck, w= w.23, a = a.12, fig.cap = "fare by deck and class"}
+
+ggplot(tdf) + 
+        geom_boxplot(aes(Deck, Fare)) +
+        facet_grid(. ~ Pclass)
+ 
+
+```
+
+
+
 
 Survival
 --------
@@ -428,7 +439,7 @@ Survival
 ## overall
 
 ```{r survival, fig.cap="Overall survival"}
-pander(prop.table(table(tdf$Survived)), digits=2)
+pander(prop.table(table(tdf$Survived)), digits=2, caption = "Suvival distributiond")
 
 ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
 ```
@@ -439,12 +450,14 @@ ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
 # by sex
 pander(prop.table(table(tdf$Survived, tdf$Sex),
                   margin = 2),
-       digits=2)
+       digits=2,
+       caption = "Survival by Sex")
 
 # by class
 pander(prop.table(table(tdf$Survived, tdf$Pclass),
                   margin = 2),
-       digits=2)
+       digits=2,
+       caption = "Survival by Pclass")
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 

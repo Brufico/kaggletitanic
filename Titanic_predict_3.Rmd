@@ -97,6 +97,7 @@ library(randomForest, quietly = TRUE)
 library(MASS, quietly = TRUE)
 library(klaR, quietly = TRUE)
 library(fastAdaboost, quietly = TRUE)
+library(e1071, quietly = TRUE)
 
 # library(party) #trees
 # library(ISLR) # example
@@ -179,18 +180,18 @@ tdf$Famly <- tdf$SibSp + tdf$Parch
 # Embarked
 tdf$Embarked[which(tdf$Embarked == "")] <- datmis
 tdf$Embarked <-  factor(tdf$Embarked)
-levels(tdf$Embarked)
+# levels(tdf$Embarked)
 # levels(tdf$Embarked)
 
 # ajout de variables
 tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep  = "."))
 
+# age status
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
 
 tdf$agestat <- as.character(tdf$agestat)
 tdf$agestat <- ifelse(is.na(tdf$agestat), datmis, tdf$agestat)
-# tdf$agestat <- factor(tdf$agestat, levels = c("child", "teen", "adult", datmis))
 tdf$agestat <- factor(tdf$agestat)
 # levels(tdf$agestat)
 # table(tdf$agestat)
@@ -200,20 +201,39 @@ tdf$agestat <- factor(tdf$agestat)
 
 ```{r dataclean1, warning= FALSE}
 # let_ticket = are letters included in the ticket number
-# sum(is.na(tdf$Ticket))
-# tdf$hasticket <-  with(tdf,!is.na(Ticket)) 
 tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
 
 # hascabin is the cabin number nkown?
-
 tdf$hascabin <- as.numeric(tdf$Cabin != "")
 # sum(tdf$hascabin)
 
 
+# Deck (from https://triangleinequality.wordpress.com/2013/09/08/basic-feature-engineering-with-the-titanic-data/)
+
+#This is going be very similar, we have a ‘Cabin’ column not doing much, only
+#1st class passengers have cabins, the rest are ‘Unknown’. A cabin number looks
+#like ‘C123’. The letter refers to the deck, and so we’re going to extract these
+#just like the titles. Turning cabin number into Deck
+#
+# cabin_list <- c('A', 'B', 'C', 'D', 'E', 'F', 'T', 'G', 'Unknown')
+# df[,'Deck']=df[,'Cabin'].map(lambda x: substrings_in_string(x, cabin_list))
+
+tdf$Deck <- factor(ifelse( tdf$Cabin != "", 
+                           substr(tdf$Cabin,start = 1,stop = 1), 
+                           datmis))
+tdf$Deck <- relevel(tdf$Deck, ref = "T")
+# levels(tdf$Deck)
+
+
 # Representing the factors with dummies
-dummies <- dummyVars(Survived ~ ., data = tdf[c("Survived", "Pclass", "Sex", "Embarked" )])
-dumvars <- predict(dummies, newdata = tdf[c("Survived", "Pclass", "Sex", "Embarked" )])
-dumvars <- dumvars[, c(1, 2, 5, 6, 7)]
+dummies <- dummyVars(Survived ~ ., data = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+dumvars <- predict(dummies, newdata = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+# dumvars <- dumvars[, c(1, 2, 4, 6, 7, 8, )]
+dumvars <- as.data.frame(dumvars)
+dumvars <- dumvars[-c(3, 5, 9, 18)]
+# colnames(dumvars)
+# str(dumvars)
+
 # add dummies to the data
 tdf <- cbind(tdf, dumvars)
 # names(tdf)
@@ -226,10 +246,13 @@ tdf <- cbind(tdf, dumvars)
 
 
 tdf2 <- tdf[, c("Survived", 
-                "Age", "SibSp" ,"Parch","Fare", # "Cabin", 
+                "Age", "SibSp" ,"Parch","Fare", 
+                # "Cabin", 
                 # "Embarked",   
                 "letticket",  "hascabin", 
-                "Pclass.1", "Pclass.2", "Sex.male", "Embarked.C",  "Embarked.Q")]
+                "Pclass.1", "Pclass.2", 
+                 "Sexfemale",  "Embarked.C", "Embarked.Q", "Embarked.S",
+                "Deck.T", "Deck.A", "Deck.B", "Deck.C", "Deck.D", "Deck.E", "Deck.F", "Deck.G" )]
 
 
 
@@ -237,9 +260,18 @@ tdf2 <- tdf[, c("Survived",
 #         dplyr::select(-c(PassengerId, Name, Ticket, Cabin, sex.class, agestat, Famly)) %>%
 #         dplyr::select(-c(Pclass, Sex)) # remove factors, keep dummies
 
+
+
+# What to do with missing values ???
+
 tdf2 <- tdf2[complete.cases(tdf2), ]
+# tdf2 <- tdf2
 
 
+
+nzv <- nearZeroVar(tdf2)
+
+tdf2 <- tdf2[-nzv]
 
 # **** PROBLEM: Later, we have an error : variables are collinear !! ***(OLD)
 
@@ -890,7 +922,7 @@ stk_train_df = data.frame(
         p_knn = predict(modknn_pca, newdata = trainingset, type="prob"),
         p_rf = predict(modrf, newdata = trainingset, type="prob"),
         p_glm = predict(modglm, newdata = trainingset, type="prob"),
-        p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
+        # p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
         p_lda = predict(modlda_pca, newdata = trainingset, type="prob"),
         p_qda = predict(modqda, newdata = trainingset, type="prob"),
         p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
@@ -902,7 +934,7 @@ stk_valid_df = data.frame(
         p_knn = predict(modknn, newdata = validationset, type="prob"),
         p_rf = predict(modrf, newdata = validationset, type="prob"),
         p_glm = predict(modglm, newdata = validationset, type="prob"),
-        p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
+        # p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
         p_lda = predict(modlda, newdata = validationset, type="prob"),
         p_qda = predict(modqda, newdata = validationset, type="prob"),
         p_nb = predict(modnb, newdata = validationset, type="prob"),
