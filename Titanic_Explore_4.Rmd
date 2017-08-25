@@ -84,6 +84,7 @@ Preliminary code
 bwtheme <- TRUE # use ggplot2 bw -theme
 specialpalette <- TRUE # controls the colour of the plots
 showarning <- TRUE # show warnings (deleted empty rows...)
+datmis <- "Ukn"
 ```
 
 
@@ -185,7 +186,7 @@ tdf$Pclass <- factor(tdf$Pclass)
 tdf$Famly <- tdf$SibSp + tdf$Parch
 
 # Embarked
-tdf$Embarked[which(tdf$Embarked == "")] <- "Unknown"
+tdf$Embarked[which(tdf$Embarked == "")] <- datmis
 tdf$Embarked <-  factor(tdf$Embarked)
 levels(tdf$Embarked)
 # levels(tdf$Embarked)
@@ -195,15 +196,16 @@ tdf <- tdf %>%
         mutate(sex.class = paste(Sex, Pclass, sep ="."))
 
 
-## Problemes !!!!!
+## Problemes résolus
 
 tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
 
 tdf$agestat <- as.character(tdf$agestat)
-tdf$agestat <- ifelse(is.na(tdf$agestat), "Unknown", tdf$agestat)
-tdf$agestat <- factor(tdf$agestat, levels = c("child", "teen", "adult", "unknown"))
-levels(tdf$agestat)
-table(tdf$agestat)
+tdf$agestat <- ifelse(is.na(tdf$agestat), datmis, tdf$agestat)
+# tdf$agestat <- factor(tdf$agestat, levels = c("child", "teen", "adult", datmis))
+tdf$agestat <- factor(tdf$agestat)
+# levels(tdf$agestat)
+# table(tdf$agestat)
 
 # Ticket number begins with letters
 tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
@@ -225,14 +227,14 @@ tdf$hascabin <- as.numeric(tdf$Cabin != "")
 
 tdf$Deck <- factor(ifelse( tdf$Cabin != "", 
                            substr(tdf$Cabin,start = 1,stop = 1), 
-                           "Unknown"))
+                           datmis))
 tdf$Deck <- relevel(tdf$Deck, ref = "T")
 # levels(tdf$Deck)
 
 numna <- sapply(tdf,
        FUN = function(x){sum(is.na(x))} )
 
-pander(t(numna))
+pander(t(numna), caption = "Number of missing values")
 ```
 
 
@@ -364,17 +366,17 @@ Compare with reference: `r .ref("fig:ship")`
 ggplot(tdf) +
         geom_bar(aes(Deck, y=..prop.., group = 1))
 
-ggplot(tdf[tdf$Deck != "Unknown",] ) +
+ggplot(tdf[tdf$Deck != datmis,] ) +
         geom_bar(aes(Deck, y=..prop.., group = 1))
 
-ggplot(tdf[tdf$Deck != "Unknown",] ) +
+ggplot(tdf[tdf$Deck != datmis,] ) +
         geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = Pclass)) + 
         facet_grid(Pclass ~ .) + theme(legend.position = "none")        
  
 ```
 
 
-```{r Embarked, a= a.43, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southamption)"}
+```{r Embarked, a= a.43, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southampton)"}
 
 temb <- table(tdf$Embarked)
 ptemb <- prop.table(temb)
@@ -531,21 +533,21 @@ pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
 
 
 
-ggplot(tdf[!is.na(tdf$agestat),]) + 
+ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ agestat) + 
         labs(title = "Sex = All") +
         theme(legend.position = "none")
 
-ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "female" ,]) + 
+ggplot(tdf[tdf$Sex == "female" ,]) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ agestat) +
         labs(title = "Sex ='female'") + 
         theme(legend.position = "none")
 
-ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) + 
+ggplot(tdf[tdf$Sex == "male" ,]) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ agestat)+
@@ -557,7 +559,7 @@ ggplot(tdf[!is.na(tdf$agestat) & tdf$Sex == "male" ,]) +
 
 ```{r survival_by6, w = w.23, fig.asp = 2, fig.cap="Survival by Deck, age and Sex"}
 
-ggplot(tdf[!is.na(tdf$agestat),]) + 
+ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Deck, fill = Pclass))+ 
         facet_grid(Deck ~ agestat)+
