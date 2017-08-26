@@ -1,6 +1,6 @@
 ---
 title: 'Titanic - Kaggle - Prediction'
-subtitle: "Explore for classroom use"
+subtitle: "Prediction attempts"
 author:  "Bruno Fischer Colonimos"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 # header-includes: \usepackage{graphicx} # for unmodded template
@@ -58,7 +58,7 @@ Preliminary code
 
 ```{r globalopts}
 # Global options
-globalseed <- 9876 # unique seed for reproducibility
+globalseed <- 98765 # unique seed for reproducibility
 percenttraining <- 0.75 # percentage of 'trainingset' to put in truetrainingset
 nfolds <- 5 # k = number of folds fork-folds crossvalidation
 ```
@@ -225,14 +225,37 @@ tdf$Deck <- relevel(tdf$Deck, ref = "T")
 # levels(tdf$Deck)
 
 
+# # Representing the factors with dummies
+# dummies <- dummyVars(Survived ~ ., data = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+# dumvars <- predict(dummies, newdata = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+# # dumvars <- dumvars[, c(1, 2, 4, 6, 7, 8, )]
+# dumvars <- as.data.frame(dumvars)
+# dumvars <- dumvars[-c(3, 5, 9, 18)]
+# # colnames(dumvars)
+# # str(dumvars)
+# 
+# # add dummies to the data
+# tdf <- cbind(tdf, dumvars)
+# # names(tdf)
+
+
+### Dummy vars new try ========================================================
+
+# Sex
+tdf$Sex <- factor(tdf$Sex)
+
 # Representing the factors with dummies
-dummies <- dummyVars(Survived ~ ., data = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+dummies <- dummyVars(Survived ~ ., 
+                     data = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )],
+                     fullRank = TRUE)
+
 dumvars <- predict(dummies, newdata = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+
+
 # dumvars <- dumvars[, c(1, 2, 4, 6, 7, 8, )]
 dumvars <- as.data.frame(dumvars)
-dumvars <- dumvars[-c(3, 5, 9, 18)]
-# colnames(dumvars)
-# str(dumvars)
+colnames(dumvars)
+str(dumvars)
 
 # add dummies to the data
 tdf <- cbind(tdf, dumvars)
@@ -244,15 +267,18 @@ tdf <- cbind(tdf, dumvars)
 #         dplyr::select(-c(PassengerId, Name, Ticket, Cabin, sex.class))
 # tdf1 <- tdf1[complete.cases(tdf1), ]
 
+names(tdf)
 
 tdf2 <- tdf[, c("Survived", 
-                "Age", "SibSp" ,"Parch","Fare", 
+                "Age", "SibSp" ,"Parch", "Fare", 
                 # "Cabin", 
                 # "Embarked",   
-                "letticket",  "hascabin", 
-                "Pclass.1", "Pclass.2", 
-                 "Sexfemale",  "Embarked.C", "Embarked.Q", "Embarked.S",
-                "Deck.T", "Deck.A", "Deck.B", "Deck.C", "Deck.D", "Deck.E", "Deck.F", "Deck.G" )]
+                # "letticket",  
+                "hascabin", 
+                "Pclass.2" , "Pclass.3", 
+                 "Sex.male",  "Embarked.Q", "Embarked.S", 
+                # "Embarked.Ukn",
+                "Deck.A", "Deck.B", "Deck.C", "Deck.D", "Deck.E", "Deck.F", "Deck.G", "Deck.Ukn")]
 
 
 
@@ -264,14 +290,15 @@ tdf2 <- tdf[, c("Survived",
 
 # What to do with missing values ???
 
-tdf2 <- tdf2[complete.cases(tdf2), ]
-# tdf2 <- tdf2
+# tdf2 <- tdf2[complete.cases(tdf2), ]
+tdf2 <- tdf2
 
 
+# # Zero variance is bad for PCA
+# nzv <- nearZeroVar(tdf2)
+# tdf2 <- tdf2[-nzv]
+# colnames(tdf2)
 
-nzv <- nearZeroVar(tdf2)
-
-tdf2 <- tdf2[-nzv]
 
 # **** PROBLEM: Later, we have an error : variables are collinear !! ***(OLD)
 
@@ -290,6 +317,12 @@ tdf2 <- tdf2[-nzv]
 
 # 
 # # findLinearCombos(tdf2[-1])
+
+# inputting ==============================
+
+
+
+
 
 
 ```
@@ -310,6 +343,15 @@ validationset <- tdf2[-intrain,]
 
 
 
+### inputting missing values
+
+```{r}
+preProcValues <- preProcess(trainingset, method = c("knnImpute","center","scale"))
+
+library('RANN')
+trainingset <- predict(preProcValues, trainingset)
+validationset <- predict(preProcValues, validationset)
+```
 
 
 
@@ -414,7 +456,7 @@ modl <- modknn <- train(Survived ~ . , data = trainingset,
 
 
 ```{r modelbuildknnrec}
-# record attempt
+# record attempt
 # modl
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
@@ -581,7 +623,7 @@ modl <- modglm <- train(Survived ~ . , data = trainingset,
 
 
 ```{r modelbuildglmrec}
-# record attempt
+# record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
 
@@ -624,7 +666,7 @@ modl <- modglm_pca <- train(Survived ~ . , data = trainingset,
 
 
 ```{r modelbuildglm_pca_rec}
-# record attempt
+# record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
 
@@ -643,45 +685,45 @@ recordmod$new(Name = "GLM_PCA",
 ### Glm with interaction
 
 ```{r modelbuildglm_int, cache=TRUE, dependson="dataclean1"}
-# _______________________________
-# glm
+# # _______________________________
+# # glm
+# # 
+# # parallel processing
+# # cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# # registerDoParallel(cluster)
 # 
-# parallel processing
-# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-# registerDoParallel(cluster)
-
-
-set.seed(globalseed)
-modl <- modglm_int <- train(Survived ~ Age + SibSp + Parch + Fare + letticket + hascabin + Pclass.1 + Pclass.2 + Sex.male + Embarked.C + Embarked.Q + Age * Pclass.1 + Age * Pclass.2 + Age * Sex.male * Pclass.1 + + Age * Sex.male * Pclass.2,
-                            data = trainingset,
-                            method = "glm",
-                            family = "binomial",
-                            # preProcess = "pca",
-                            trControl = trainControl(method = "cv",
-                                                     number = nfolds))
-
-# stop parallel proc.
-# stopCluster(cluster)
-# registerDoSEQ()
+# 
+# set.seed(globalseed)
+# modl <- modglm_int <- train(Survived ~ Age + SibSp + Parch + Fare + letticket + hascabin + Pclass.1 + Pclass.2 + Sex.male + Embarked.C + Embarked.Q + Age * Pclass.1 + Age * Pclass.2 + Age * Sex.male * Pclass.1 + + Age * Sex.male * Pclass.2,
+#                             data = trainingset,
+#                             method = "glm",
+#                             family = "binomial",
+#                             # preProcess = "pca",
+#                             trControl = trainControl(method = "cv",
+#                                                      number = nfolds))
+# 
+# # stop parallel proc.
+# # stopCluster(cluster)
+# # registerDoSEQ()
 ```
 
 
 ```{r modelbuildglm_int_rec}
-# record attempt
-cm <- confusionMatrix(data = predict( modl , 
-                                      newdata=validationset, 
-                                      type="raw"),
-                      reference = validationset$Survived)
-
-recordmod$new(Name = "GLM_INT", 
-              Method = modl$method, 
-              Preprocess = "None",
-              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
-              Accuracy.CV = round(max(modl$results$Accuracy),3),
-              Accuracy.validation = round(cm$overal["Accuracy"],3),
-              Model.name = "modglm_int" )
-
-# recordmod$get()
+# # record attempt
+# cm <- confusionMatrix(data = predict( modl , 
+#                                       newdata=validationset, 
+#                                       type="raw"),
+#                       reference = validationset$Survived)
+# 
+# recordmod$new(Name = "GLM_INT", 
+#               Method = modl$method, 
+#               Preprocess = "None",
+#               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+#               Accuracy.CV = round(max(modl$results$Accuracy),3),
+#               Accuracy.validation = round(cm$overal["Accuracy"],3),
+#               Model.name = "modglm_int" )
+# 
+# # recordmod$get()
 ```
 
 ### LDA
@@ -708,7 +750,7 @@ modl <- modlda <- train(Survived ~ . , data = trainingset,
 
 
 ```{r modelbuildldarec}
-# record attempt
+# record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
                 reference = validationset$Survived)
 
@@ -766,40 +808,40 @@ recordmod$new(Name = "LDA_PCA",
 ### QDA
 
 ```{r modelbuildqda, cache=TRUE, dependson="dataclean1"}
-# _______________________________
-# qda
+# # _______________________________
+# # qda
+# #
+# # parallel processing
+# # cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+# # registerDoParallel(cluster)
 # 
-# parallel processing
-# cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
-# registerDoParallel(cluster)
-
-
-set.seed(globalseed)
-modl <- modqda <- train(Survived ~ . , data = trainingset,
-                        method = "qda",
-                        trControl = trainControl(method = "cv",
-                                                 number = nfolds))
-
-# stop parallel proc.
-# stopCluster(cluster)
-# registerDoSEQ()
+# 
+# set.seed(globalseed)
+# modl <- modqda <- train(Survived ~ . , data = trainingset,
+#                         method = "qda",
+#                         trControl = trainControl(method = "cv",
+#                                                  number = nfolds))
+# 
+# # stop parallel proc.
+# # stopCluster(cluster)
+# # registerDoSEQ()
 ```
 
 
 ```{r modelbuildqdarec}
-# record attempt
-cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
-                reference = validationset$Survived)
-
-recordmod$new(Name = "QDA", 
-              Method = modl$method, 
-              Preprocess = "None",
-              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
-              Accuracy.CV = round(max(modl$results$Accuracy),3),
-              Accuracy.validation = round(cm$overal["Accuracy"],3),
-              Model.name = "modlda_pca" )
-
-# recordmod$get()
+# # record attempt
+# cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
+#                 reference = validationset$Survived)
+# 
+# recordmod$new(Name = "QDA", 
+#               Method = modl$method, 
+#               Preprocess = "None",
+#               Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+#               Accuracy.CV = round(max(modl$results$Accuracy),3),
+#               Accuracy.validation = round(cm$overal["Accuracy"],3),
+#               Model.name = "modlda_pca" )
+# 
+# # recordmod$get()
 ```
 
 
@@ -892,9 +934,6 @@ kable(recordmod$get(), row.names = FALSE, caption = "Base models accuracy")
 ```
 
 
-
-
-
 Stacking models
 ---------------
 
@@ -902,11 +941,11 @@ Stacking models
 
 ```{r}
 basemods <- data.frame(model= c(
-        "modknn_pca", 
+        "modknn", 
         "modrf",
         "modglm",
         "modlda_pca",
-        "modqda",
+        # "modqda",
         "modnb_pca")
 )
 
@@ -919,12 +958,12 @@ basemods <- data.frame(model= c(
 ```{r basepreds, warning=FALSE}
 # trainingset
 stk_train_df = data.frame(
-        p_knn = predict(modknn_pca, newdata = trainingset, type="prob"),
+        p_knn = predict(modknn, newdata = trainingset, type="prob"),
         p_rf = predict(modrf, newdata = trainingset, type="prob"),
         p_glm = predict(modglm, newdata = trainingset, type="prob"),
         # p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
         p_lda = predict(modlda_pca, newdata = trainingset, type="prob"),
-        p_qda = predict(modqda, newdata = trainingset, type="prob"),
+        # p_qda = predict(modqda, newdata = trainingset, type="prob"),
         p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
         Survived =trainingset$Survived
 )
@@ -936,7 +975,7 @@ stk_valid_df = data.frame(
         p_glm = predict(modglm, newdata = validationset, type="prob"),
         # p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
         p_lda = predict(modlda, newdata = validationset, type="prob"),
-        p_qda = predict(modqda, newdata = validationset, type="prob"),
+        # p_qda = predict(modqda, newdata = validationset, type="prob"),
         p_nb = predict(modnb, newdata = validationset, type="prob"),
         Survived =validationset$Survived
 )
@@ -1012,7 +1051,7 @@ registerDoSEQ()
 
 
 ```{r modelbuild_stk_ada_rec}
-# record attempt
+# record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=stk_valid_df, type="raw"),
                 reference = validationset$Survived)
 
