@@ -60,7 +60,13 @@ Preliminary code
 # Global options
 globalseed <- 98765 # unique seed for reproducibility
 percenttraining <- 0.75 # percentage of 'trainingset' to put in truetrainingset
-nfolds <- 5 # k = number of folds fork-folds crossvalidation
+nfolds <- 10 # k = number of folds fork-folds crossvalidation
+bwtheme <- TRUE
+specialpalette <- TRUE # controls the colour of the plots
+showarning <- TRUE # show warnings (deleted empty rows...)
+datmis <- "Ukn"
+base_cache <- TRUE
+stk_cache <- FALSE
 ```
 
 
@@ -73,15 +79,7 @@ nfolds <- 5 # k = number of folds fork-folds crossvalidation
 ## Libraries and auxiliary code (install before running)
 
 (Not fully echoed here)
-
-```{r, echo = FALSE}
-# adjust Gggplot2 theme and color palette
-bwtheme <- TRUE
-specialpalette <- TRUE # controls the colour of the plots
-showarning <- TRUE # show warnings (deleted empty rows...)
-datmis <- "Ukn"
-```
-
+`
 
 ```{r libs, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
 # libraries
@@ -354,16 +352,67 @@ validationset <- predict(preProcValues, validationset)
 ### introducing interactions
 
 ```{r addinteraction}
-# 
-# namecol <- colnames(trainingset)
-# namecolp <- namecol[-1]
-# 
-# makeprods <- function(basevar, prodstodo) {
-#         listp <- lapply
-# }
 
+namecol <- colnames(trainingset)
+namecolp <- namecol[-1]
+
+# function to do the products
+makeprods <- function(basevar, # the name (string) of the variable to multiply
+                      prodstodo, # vector of names of the columns by which to multiply  
+                      dframe) {  # the dataframe containing the vars
+        listp <- lapply(prodstodo,
+                        FUN = function(factname){
+                                dframe[[basevar]] * dframe[[factname]]
+                        } )
+        vnames <- sapply(prodstodo,
+                         FUN=function(factname){
+                                 paste(basevar, factname, sep = "_")
+                         } )
+        dftp <- as.data.frame(listp)
+        colnames(dftp) <- vnames
+        dftp # return the dataframe of products
+}
+
+
+allprods <- function(vbv, vprods, dframe){
+        # init dummy column
+        A <- data.frame(dummy = numeric(nrow(dframe)))
+        # products
+        P <- lapply(1:length(vbv),
+                    FUN = function(idx){
+                            makeprods(vbv[idx], 
+                                      vprods[(idx+1):length(vprods)],
+                                      dframe = dframe)
+                    } )
+        # combine all columns
+        A <- Reduce(f = function(dfx, dfy){cbind(dfx, dfy)},
+               x = P,
+               init = A)
+        A[-1] # jettison dummy col and return
+}
+
+
+
+
+# apply
+makeinter <- function(dframe) {
+        namecol <- colnames(dframe)
+        intr <- allprods(vbv = namecol[2:12], 
+                         vprods = namecol[-1], 
+                         dframe = dframe)
+        # add interaction cols at the end
+        cbind(dframe, intr)
+}
+
+trainingset <- makeinter(trainingset)
+validationset <- makeinter(validationset)
+
+# remove lin combinations
+
+flc <- findLinearCombos(trainingset[-1])
+trainingset <- trainingset[ ,-flc$remove]
+validationset <- validationset[ ,-flc$remove]
 ```
-
 
 
 
@@ -447,7 +496,7 @@ Model Building
 
 ### KNN
 
-```{r modelbuildknn, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildknn, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # Knn
 # 
@@ -487,7 +536,7 @@ recordmod$new(Name = "KNN",
 
 ### KNN-PCA
 
-```{r modelbuildknn_pca, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildknn_pca, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # Knn
 # 
@@ -528,7 +577,7 @@ recordmod$new(Name = "KNN_PCA",
 
 ### Random Forest
 
-```{r modelbuildrf, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildrf, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # Random Forests
 #  
@@ -569,9 +618,52 @@ recordmod$new(Name = "RF",
 
 
 
+### Random Forest 2
+
+```{r modelbuildrf2, cache=base_cache, dependson="dataclean1"}
+# _______________________________
+# Random Forests
+#  
+# parallel processing
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+
+
+set.seed(globalseed + 1)
+modl <- modrf2 <- train(Survived ~ . , data = trainingset,
+                        method = "rf",
+                        # preProcess = "pca",
+                        trControl = trainControl(method = "cv",
+                                                 number = nfolds))
+
+# stop parallel proc.
+stopCluster(cluster)
+registerDoSEQ()
+```
+
+
+```{r modelbuildrfrec2}
+# record attempt
+# modl
+cm <- confusionMatrix(data = predict( modl , newdata=validationset, type="raw"),
+                reference = validationset$Survived)
+
+recordmod$new(Name = "RF", 
+              Method = modl$method, 
+              Preprocess = "None",
+              Best.tune = paste0(colnames(modl$bestTune)[1], " = ", modl$bestTune[1]),
+              Accuracy.CV = round(max(modl$results$Accuracy),3),
+              Accuracy.validation = round(cm$overal["Accuracy"],3),
+              Model.name = "modrf2" )
+
+```
+
+
+
 ### Random Forest + PCA
 
-```{r modelbuildrf_pca, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildrf_pca, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # Random Forests - PCA
 #  
@@ -613,7 +705,7 @@ recordmod$new(Name = "RF_PCA",
 
 ### Glm
 
-```{r modelbuildglm, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildglm, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # glm
 # 
@@ -656,7 +748,7 @@ recordmod$new(Name = "GLM",
 
 ### Glm_pca
 
-```{r modelbuildglm_pca, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildglm_pca, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # glm
 # 
@@ -698,7 +790,7 @@ recordmod$new(Name = "GLM_PCA",
 
 ### Glm with interaction
 
-```{r modelbuildglm_int, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildglm_int, cache=base_cache, dependson="dataclean1"}
 # # _______________________________
 # # glm
 # # 
@@ -742,7 +834,7 @@ recordmod$new(Name = "GLM_PCA",
 
 ### LDA
 
-```{r modelbuildlda, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildlda, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # lda
 # 
@@ -781,7 +873,7 @@ recordmod$new(Name = "LDA",
 
 ### LDA-PCA
 
-```{r modelbuildlda_pca, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildlda_pca, cache=base_cache, dependson="dataclean1"}
 # _______________________________
 # lda
 # 
@@ -821,7 +913,7 @@ recordmod$new(Name = "LDA_PCA",
 
 ### QDA
 
-```{r modelbuildqda, cache=TRUE, dependson="dataclean1"}
+```{r modelbuildqda, cache=base_cache, dependson="dataclean1"}
 # # _______________________________
 # # qda
 # #
@@ -861,7 +953,7 @@ recordmod$new(Name = "LDA_PCA",
 
 ### Naive Bayes
 
-```{r modelbuildnb, cache=TRUE, dependson="dataclean1", warning=FALSE}
+```{r modelbuildnb, cache=base_cache, dependson="dataclean1", warning=FALSE}
 # _______________________________
 # nb = naive Bayes
 # 
@@ -901,7 +993,7 @@ recordmod$new(Name = "NB",
 
 ### Naive Bayes - PCA
 
-```{r modelbuildnb_pca, cache=TRUE, dependson="dataclean1", warning=FALSE}
+```{r modelbuildnb_pca, cache=base_cache, dependson="dataclean1", warning=FALSE}
 # _______________________________
 # nb = naive Bayes - PCA
 # 
@@ -972,37 +1064,47 @@ basemods <- data.frame(model= c(
 ```{r basepreds, warning=FALSE}
 # trainingset
 stk_train_df = data.frame(
-        p_knn = predict(modknn, newdata = trainingset, type="prob"),
+        Survived =trainingset$Survived,        
+        # p_knn_pca = predict(modknn_pca, newdata = trainingset, type="prob"),
         p_rf = predict(modrf, newdata = trainingset, type="prob"),
         p_glm = predict(modglm, newdata = trainingset, type="prob"),
-        # p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
-        p_lda = predict(modlda_pca, newdata = trainingset, type="prob"),
+        p_glm_pca = predict(modglm_pca, newdata = trainingset, type="prob"),
+        p_lda = predict(modlda, newdata = trainingset, type="prob"),
+        p_lda_pca = predict(modlda_pca, newdata = trainingset, type="prob")
         # p_qda = predict(modqda, newdata = trainingset, type="prob"),
-        p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
-        Survived =trainingset$Survived
+        #p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
+
 )
 
 # validationset
 stk_valid_df = data.frame(
-        p_knn = predict(modknn, newdata = validationset, type="prob"),
+        Survived =validationset$Survived,       
+        # p_knn_pca = predict(modknn_pca, newdata = validationset, type="prob"),
         p_rf = predict(modrf, newdata = validationset, type="prob"),
         p_glm = predict(modglm, newdata = validationset, type="prob"),
-        # p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
+        p_glm_pca = predict(modglm_pca, newdata = validationset, type="prob"),
         p_lda = predict(modlda, newdata = validationset, type="prob"),
+        p_lda_pca = predict(modlda_pca, newdata = validationset, type="prob")
         # p_qda = predict(modqda, newdata = validationset, type="prob"),
-        p_nb = predict(modnb, newdata = validationset, type="prob"),
-        Survived =validationset$Survived
+       # p_nb = predict(modnb, newdata = validationset, type="prob"),
+
 )
 
+```
+
+The base predictions are generated as follows:
+```{r, ref.label="basepreds", echo = TRUE, eval=FALSE}
 
 ```
+
+
 
 
 ### stacked predictions
 
 #### Combined With RF
 
-```{r modelbuild_stk_rf, cache=TRUE}
+```{r modelbuild_stk_rf, cache=stk_cache}
 # stkrf Stacked preds with rf
 # 
 # parallel processing
@@ -1024,7 +1126,7 @@ registerDoSEQ()
 
 
 ```{r modelbuild_stk_rf_rec}
-# record attempt
+# record attempt
 cm <- confusionMatrix(data = predict( modl , newdata=stk_valid_df, type="raw"),
                 reference = validationset$Survived)
 
@@ -1043,7 +1145,7 @@ recordmod$new( i = 2,
 
 #### Combined With adaboost
 
-```{r modelbuild_stk_ada, cache=TRUE}
+```{r modelbuild_stk_ada, cache=stk_cache}
 # stkrf Stacked preds with rf
 # 
 # parallel processing
