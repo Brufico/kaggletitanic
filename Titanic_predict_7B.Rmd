@@ -170,48 +170,48 @@ Data modifications {#modifs}
 
 # fonction de modification des données:
 
-mod_data <- function(tdf){
+mod_data <- function(dframe){
         # factor survived
-        sf <- factor(tdf$Survived, labels=c("No", "Yes"))
-        tdf$Survived <- sf
+        sf <- factor(dframe$Survived, labels=c("No", "Yes"))
+        dframe$Survived <- sf
         # makefactor Pclass
-        tdf$Pclass <- factor(tdf$Pclass)
+        dframe$Pclass <- factor(dframe$Pclass)
         
         # combine SibSp + Parch
-        tdf$Famly <- tdf$SibSp + tdf$Parch
+        dframe$Famly <- dframe$SibSp + dframe$Parch
         
         # Embarked
-        tdf$Embarked[which(tdf$Embarked == "")] <- datmis
-        tdf$Embarked <-  factor(tdf$Embarked)
+        dframe$Embarked[which(dframe$Embarked == "")] <- datmis
+        dframe$Embarked <-  factor(dframe$Embarked)
         
         # Sex
-        tdf$Sex <- factor(tdf$Sex)
+        dframe$Sex <- factor(dframe$Sex)
         
         
         # ajout de variables
-        tdf <- tdf %>%
+        dframe <- dframe %>%
                 mutate(sex.class = paste(Sex, Pclass, sep  = "."))
         
         # age status
-        tdf$agestat <- cut(tdf$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
+        dframe$agestat <- cut(dframe$Age, breaks=c(0,12,18,100), labels=c("child", "teen", "adult"))
         # code missing values 'datmis'
-        tdf$agestat <- as.character(tdf$agestat)
-        tdf$agestat <- ifelse(is.na(tdf$agestat), datmis, tdf$agestat)
-        tdf$agestat <- factor(tdf$agestat)
+        dframe$agestat <- as.character(dframe$agestat)
+        dframe$agestat <- ifelse(is.na(dframe$agestat), datmis, dframe$agestat)
+        dframe$agestat <- factor(dframe$agestat)
         
         ### Cleaning: transforming covariates, removing superfluous variables
         # ------------------------------------------
         # let_ticket = are letters included in the ticket number
-        tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
+        dframe$letticket <- as.numeric(substr(dframe$Ticket,start = 1, stop = 1 ) %in% LETTERS)
         
         # hascabin is the cabin number known?
-        tdf$hascabin <- as.numeric(tdf$Cabin != "")
+        dframe$hascabin <- as.numeric(dframe$Cabin != "")
         # Deck (from https://triangleinequality.wordpress.com/2013/09/08/basic-feature-engineering-with-the-titanic-data/)
-        tdf$Deck <- factor(ifelse( tdf$Cabin != "", 
-                           substr(tdf$Cabin,start = 1,stop = 1), 
+        dframe$Deck <- factor(ifelse( dframe$Cabin != "", 
+                           substr(dframe$Cabin,start = 1,stop = 1), 
                            datmis))
         # return dframe
-        return(tdf)
+        return(dframe)
 }
 
 ```
@@ -220,26 +220,26 @@ mod_data <- function(tdf){
 
 ```{r dataclean1, warning= FALSE}
 
-clean_data <- function(tdf) {
+clean_data <- function(dframe) {
         ### Dummy vars 
         # Representing the factors with dummies
-        tdf$Deck <- relevel(tdf$Deck, ref = datmis)
-        tdf$Pclass <- relevel(tdf$Pclass, ref = "3")
-        tdf$Embarked <- relevel(tdf$Embarked, ref = datmis)
+        dframe$Deck <- relevel(dframe$Deck, ref = datmis)
+        dframe$Pclass <- relevel(dframe$Pclass, ref = "3")
+        dframe$Embarked <- relevel(dframe$Embarked, ref = datmis)
         
         dummies <- dummyVars(Survived ~ ., 
-                             data = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )],
+                             data = dframe[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )],
                              fullRank = TRUE) # ! attention
         
-        dumvars <- predict(dummies, newdata = tdf[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
+        dumvars <- predict(dummies, newdata = dframe[c("Survived", "Pclass", "Sex", "Embarked", "Deck" )])
         
         dumvars <- as.data.frame(dumvars)
 
         # add dummies to the data
-        tdf <- cbind(tdf, dumvars)
+        dframe <- cbind(dframe, dumvars)
         
         # select variables to avoid collinearity
-        tdf <- tdf[, c("Survived", 
+        dframe <- dframe[, c("Survived", 
                 "Age", "SibSp" ,"Parch", "Fare", 
                 # "Cabin", 
                 # "Embarked",   
@@ -251,14 +251,14 @@ clean_data <- function(tdf) {
                 # "Embarked.Ukn",
                 "Deck.A", "Deck.B", "Deck.C", "Deck.D", "Deck.E", "Deck.F", "Deck.G" #, "Deck.T"
                 )]
-        return(tdf)
+        return(dframe)
 }
 
 ```
 
-```{r preproc}
+```{r preprocSynth}
 
-
+tdf2 <- clean_data(mod_data(tdf))
 
 ```
 
@@ -278,7 +278,7 @@ validationset <- tdf2[-intrain,]
 
 ### inputting missing values (age) based on trainingset only
 
-```{r}
+```{r inputmissing}
 set.seed(globalseed)
 preProcValues <- preProcess(trainingset, method = c("knnImpute","center","scale"))
 
