@@ -119,6 +119,8 @@ Data
 Get it
 -------
 
+The data is downloaded from Kaggle (https://www.kaggle.com/c/titanic) and saved. It is loaded here from disk.
+
 ```{r dataget}
 # read
 datadir <-  "data"
@@ -168,14 +170,30 @@ __Survival__
 :`r tabcap(chunklabel = "dataorg", "Data organization")`
 
 
+
+
+
 Data modifications {#modifs}
 -------------------
 
-* Make `Survived` , `Pclass` and `Embark`   factors, 
+* Make `Survived` , `Pclass` and `Embark` factors, 
 * Create `Famly` = `SibSp + Parch` 
-
+* Substitute missing values with `r datmis` in variable `Embarked`
+* added variables
+    * `agestat` = age status : "child", "teen", "adult" (cutoff ages = 12, 18)
+    * `letticket` = Ticket number begins with letters (yes = 1, no = 0)
+    * `hascabin` = is the cabin number known? (yes = 1, no = 0)
+    * `Deck`= if the cabin is known, the first letter is the Deck (T, A, B, C...), otherwise it is `datmis`
+    
 
 ```{r datamod, warning=FALSE}
+numna_before <- sapply(tdf,
+       FUN = function(x){sum(is.na(x))} )
+
+pander(t(numna_before), caption = "Before modifications, Number of missing values")
+
+
+
 sf <- factor(tdf$Survived, labels=c("No", "Yes"))
 tdf$Survived <- sf
 
@@ -231,7 +249,7 @@ tdf$Deck <- relevel(tdf$Deck, ref = "T")
 numna <- sapply(tdf,
        FUN = function(x){sum(is.na(x))} )
 
-pander(t(numna), caption = "Number of missing values")
+pander(t(numna), caption = "After modifications, Number of missing values")
 ```
 
 
@@ -421,13 +439,19 @@ ggplot(tdf) + geom_boxplot(aes(Pclass,Fare, fill = Pclass), color = "grey50") +
         facet_grid(Sex ~.) 
 ```
 
-```{r faredeck, w= w.23, a = a.12, fig.cap = "fare by deck and class"}
+```{r faredeck, w= w.11, fig.asp = 2 , fig.cap = "fare by deck and class"}
 
-ggplot(tdf) + 
-        geom_boxplot(aes(Deck, Fare)) +
-        facet_grid(. ~ Pclass)
- 
-
+# unique(tdf$Deck)
+local( {
+        tdf1 <- tdf
+        tdf1$Deck <- reorder(tdf1$Deck, tdf1$Fare, median)
+        
+        ggplot(tdf1) + 
+                geom_boxplot(aes(Deck, Fare)) +
+                coord_flip() +
+                facet_grid( Pclass ~ ., switch = "y")
+}
+)
 ```
 
 
@@ -570,7 +594,7 @@ ggplot(tdf[tdf$Sex == "male" ,]) +
 ```
 
 
-```{r survival_by6, w = w.23, fig.asp = 2, fig.cap="Survival by Deck, age and Sex"}
+```{r survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"}
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
@@ -579,5 +603,13 @@ ggplot(tdf) +
         labs(title = "by Deck") # + theme(legend.position = "none")
 ```
 
+```{r survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Sex))+ 
+        facet_grid(Deck ~ agestat)+
+        labs(title = "by Deck") # + theme(legend.position = "none")
+```
 
 
