@@ -135,10 +135,6 @@ tdf <- read.csv(file.path(datadir, fname), stringsAsFactors = FALSE)
 pander(head(tdf), caption = tabcap("A glimpse of the data"))     
 ```
 
-* Quick dataframe summary: table `r .ref("tab:datasum")`
-```{r datasum}
-pander(summary(tdf), caption = tabcap("Data summaries"))
-```
 
 
 Variables organization {#variables}
@@ -170,6 +166,11 @@ __Survival__
 :`r tabcap(chunklabel = "dataorg", "Data organization")`
 
 
+
+* Quick dataframe summary: table `r .ref("tab:datasum")`
+```{r datasum}
+pander(summary(tdf), caption = tabcap("Data summaries"))
+```
 
 
 
