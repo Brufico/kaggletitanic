@@ -294,7 +294,7 @@ ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
 ```
 
-FIgure `r .ref("fig:", "ident3")`
+Figure `r .ref("fig:", "ident3")`
 
 
 Family members on board {#fmly}
