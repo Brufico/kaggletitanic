@@ -108,7 +108,7 @@ knitr::set_alias(w = "fig.width", a = "fig.asp")
 
 ```
 
-```{r setup}
+```{r setup, echo =FALSE}
 # default options
 knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
 ```
@@ -264,6 +264,8 @@ Passenger Identity {#demographic}
 
 ### Sex and Age {#sexage}
 
+* Gender
+
 ```{r ident1, warning=FALSE, fig.cap="Gender distribution"}
 
 # opts.labels("f13"), fails
@@ -274,13 +276,16 @@ pander(tbsex, caption = tabcap("Gender distribution"))
 ggplot(tdf, aes(Sex)) + geom_bar()
 ```
 
-FIgure `r .ref("fig:ident1")`
+Figure `r .ref("fig:ident1")` shows the gender distribution
 
 ```{r ident2, warning=FALSE, fig.cap="Age and Gender"}
 sumAge <- summary(tdf$Age)
 ```
 
-Numerical summaries of Age : `r pander(sumAge, caption = "Age distribution")`
+* Age : 
+`r pander(sumAge, caption = "Age distribution")`
+
+* Gender and age
 
 ```{r ident3,  warning=FALSE, fig.cap="Age and Gender"}
 # nc <- nclass.Sturges(tdf$Age)
@@ -294,7 +299,9 @@ ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
 ```
 
-Figure `r .ref("fig:", "ident3")`
+
+Figure `r .ref("fig:", "ident3")` shows the age distributions of both genders
+
 
 
 Family members on board {#fmly}
@@ -312,12 +319,13 @@ ggplot(tdf) + geom_bar(aes(Parch))
 ggplot(tdf) + geom_bar(aes(Famly))
 ```
 
-FIgure `r .ref("fig:", "family2")`
+FIgure `r .ref("fig:", "family2")` shows the Family size variablesand their correlation. Famly seems to convey most of the information.
+
 
 Passenger class {#pclass}
 -------------------
 
-figure `r .ref("fig:", "ship")`
+figure `r .ref("fig:", "ship")` Shows that the third class accounts for more than 50% of the passengers. 
 
 ```{r ship,  fig.cap="Passenger Classes Distribution"}
 
@@ -374,9 +382,11 @@ ggplot(tdf) +
 
 ```
 
-FIgure `r .ref("fig:", "family_class")`
-Compare with reference: `r .ref("fig:ship")`
+Figure `r .ref("fig:", "family_class")`. Compare with reference : figure `r .ref("fig:ship")`
 
+
+Deck
+----
 
 ```{r Deck, fig.cap= "Distribution of decks"}
 ggplot(tdf) +
@@ -390,14 +400,22 @@ ggplot(tdf[tdf$Deck != datmis,] ) +
         facet_grid(Pclass ~ .) + theme(legend.position = "none")        
  
 ```
+Figure `r .ref("fig:", "Deck") shows a very partial distribution of decks: the deck of nearly 80% of the passengers is unknown. However, the third graph reveals the strong link between the passencger class and the deck.
 
+Embarkation point
+-----------------
+The passengers could embark at Southampton (S) , Cherbourg or Cobh, alias Queenstown (Q) 
 
 ```{r Embarked, a= a.43, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southampton)"}
 
+tdf$Embarked <- factor(tdf$Embarked, levels = c("S", "C", "Q"))
 temb <- table(tdf$Embarked)
+# proportion table
 ptemb <- prop.table(temb)
 df <- rbind(frequency = temb , Rfreq = ptemb) 
 pander(df, digits=2, caption = "Embarkation port")
+
+
 
 # na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
 # 
@@ -418,13 +436,23 @@ ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Pclass)) 
         facet_grid(Pclass~Sex) +
         theme(legend.position = "none")
 
+
+```
+
+```{r bydeckv, w = w.12, a = a.21}
 ggplot(tdfx) + 
         geom_bar(aes(Embarked, y=..prop.., fill = Pclass)) +
         facet_grid(Deck~Sex) +
-        theme(legend.position = "none")
+        theme(legend.position = "none") +
+        labs(title = "Broken down by deck")
 ```
 
 
+Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major embarkation point (`r  100 * df["Rfreq", "S"]`% of the passengers). However, this is not as true for the women, particularly for the women with a first-class ticket.( only about 50% of them embarked at Southampton) 
+
+
+The Fare
+--------
 
 ```{r fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"}
 
@@ -445,10 +473,10 @@ ggplot(tdf) + geom_boxplot(aes(Pclass,Fare, fill = Pclass), color = "grey50") +
 # unique(tdf$Deck)
 local( {
         tdf1 <- tdf
-        tdf1$Deck <- reorder(tdf1$Deck, tdf1$Fare, median)
-        
+        # tdf1$Deck <- reorder(tdf1$Deck, tdf1$Fare, median)
+        tdf1$Deck <- factor(tdf$Deck)
         ggplot(tdf1) + 
-                geom_boxplot(aes(Deck, Fare)) +
+                geom_boxplot(aes(Deck, Fare), outlier.alpha = 0.2) +
                 coord_flip() +
                 facet_grid( Pclass ~ ., switch = "y")
 }
@@ -461,7 +489,7 @@ local( {
 Survival
 --------
 
-## overall
+### overall
 
 ```{r survival, fig.cap="Overall survival"}
 pander(prop.table(table(tdf$Survived)), digits=2, caption = "Suvival distributiond")
@@ -469,7 +497,7 @@ pander(prop.table(table(tdf$Survived)), digits=2, caption = "Suvival distributio
 ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
 ```
 
-## By category
+### By category
 
 ```{r survival-by, fig.cap="Survival by sex or Passenger Class"}
 # by sex
@@ -482,7 +510,7 @@ pander(prop.table(table(tdf$Survived, tdf$Sex),
 pander(prop.table(table(tdf$Survived, tdf$Pclass),
                   margin = 2),
        digits=2,
-       caption = "Survival by Pclass")
+       caption = "Survival by Passenger class")
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 
@@ -495,7 +523,7 @@ ggplot(tdf) +
 
 ```
 
-Class and sex
+* Class and sex
 
 ```{r survival-by2, fig.cap="Survival by Sex and Class"}
 
@@ -507,9 +535,17 @@ ggplot(tdf) +
 ```
 
 
-Class , sex, embarked
+* Class , sex, Port of embarkation
 
 ```{r survival-by3, fig.cap="Survival by Sex and Class / Embarked"}
+
+ggplot(tdfx[tdfx$Embarked == "S", ]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex)+
+        labs(title = "Embarked at Southampton")+
+        theme(legend.position = "none")
+
 
 ggplot(tdfx[tdfx$Embarked == "C", ]) + 
         geom_bar(aes(Survived, y = ..prop.., 
@@ -526,13 +562,6 @@ ggplot(tdfx[tdfx$Embarked == "Q", ]) +
         labs(title = "Embarked at Queenstown")+
         theme(legend.position = "none")
 
-
-ggplot(tdfx[tdfx$Embarked == "S", ]) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Pclass ~ Sex)+
-        labs(title = "Embarked at Southampton")+
-        theme(legend.position = "none")
 
 
 ```
@@ -561,7 +590,7 @@ ggplot(tdf[tdf$Survived == "No", ]) +
         theme(legend.position = "none")
 ```
 
-Class and agestat, agestat and sex
+* Class and agestat, agestat and sex
 
 ```{r survival-by5, fig.cap="Survival by age status, Class and sex"}
 
