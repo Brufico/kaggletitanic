@@ -182,9 +182,10 @@ Data modifications {#modifs}
 * Substitute missing values with `r datmis` in variable `Embarked`
 * added variables
     * `agestat` = age status : "child", "teen", "adult" (cutoff ages = 12, 18)
+    * `title` = civility.
     * `letticket` = Ticket number begins with letters (yes = 1, no = 0)
     * `hascabin` = is the cabin number known? (yes = 1, no = 0)
-    * `Deck`= if the cabin is known, the first letter is the Deck (T, A, B, C...), otherwise it is `datmis`
+    * `Deck`= if the cabin is known, the first letter is the Deck (T, A, B, C...), otherwise it is "`r datmis`" 
     
 
 ```{r datamod, warning=FALSE}
@@ -223,6 +224,58 @@ tdf$agestat <- factor(tdf$agestat)
 # levels(tdf$agestat)
 # table(tdf$agestat)
 
+# title:
+
+tdf$title <- local({
+        begcivil <- unlist(regexec(pattern = ",", 
+                                   text= tdf$Name,
+                                   fixed = TRUE)
+        )
+        
+        endcivil <- unlist(regexec(pattern = " ", 
+                                   text =substring(text = tdf$Name, first = begcivil + 2 ) )
+        )
+        
+        substring(text = tdf$Name, 
+                  first = begcivil + 2, 
+                  last = begcivil + endcivil - 1)
+})
+
+# table(tdf$agestat, tdf$title)
+# table(tdf$Sex, tdf$title)
+# table(tdf$Pclass, tdf$title)
+
+
+# Using title to correct agestat:
+
+# "Master" is only used for (male) children
+tdf <- local({
+        index <- which(tdf$title == "Master" & tdf$agestat == datmis)
+        tdf[index, "agestat"] <- "child"
+        # print(head(tdf[index, ] ))
+        tdf
+})
+
+# "Mrs" means a female adult status, even if the age is "teen" 2 cases, with 18 and 14 years of age)
+tdf <- local({
+        index <- which(tdf$title == "Mrs" & tdf$agestat != "adult")
+        tdf[index, "agestat"] <- "adult"
+        # print(head(tdf[index, ] ))
+        tdf
+})
+
+# "Dr" means an adult status (1 case Unknown)
+tdf <- local({
+        index <- which(tdf$title == "Dr" & tdf$agestat != "adult")
+        tdf[index, "agestat"] <- "adult"
+        # print(head(tdf[index, ] ))
+        tdf
+})
+                   
+
+
+
+
 # Ticket number begins with letters
 tdf$letticket <- as.numeric(substr(tdf$Ticket,start = 1, stop = 1 ) %in% LETTERS)
 
@@ -249,6 +302,9 @@ tdf$Deck <- relevel(tdf$Deck, ref = "T")
 
 numna <- sapply(tdf,
        FUN = function(x){sum(is.na(x))} )
+
+
+
 
 pander(t(numna), caption = "After modifications, Number of missing values")
 ```
@@ -297,10 +353,41 @@ ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) +
 ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         scale_x_discrete(limits = rev(levels(tdf$Sex))) +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
+
+
+ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
+        scale_x_discrete(limits = rev(levels(tdf$Sex))) +
+        coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10)) + 
+        facet_grid( Pclass ~ .) +
+        labs(title = "By sex and Class")
 ```
 
 
 Figure `r .ref("fig:", "ident3")` shows the age distributions of both genders
+
+
+* Age Status :
+```{r agestatus}
+ggplot(tdf, aes(agestat)) + geom_bar()
+
+ggplot(tdf, aes(agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Sex, fill = Sex)) + 
+        facet_grid(Sex ~ .) + 
+        theme(legend.position = "none")
+
+ggplot(tdf, aes(agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Sex)) + 
+        facet_grid(. ~ Pclass)+
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position = "none")
+
+```
+```{r agestat2, w = w.11, fig.cap= "Age status by sex and class"}
+ggplot(tdf, aes(agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Pclass)) + 
+        facet_grid(Sex ~ Pclass) +
+        theme(axis.text.x = element_text(angle = 90))
+```
+
 
 
 
