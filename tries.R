@@ -12,7 +12,9 @@ library(dplyr)
 tick <- tdf %>%
         group_by(Ticket) %>%
         mutate(Fare1 = mean(Fare), numtick = n()) %>%
-        mutate(Dfare = Fare - Fare1) %>%
+        mutate(Pfare = Fare / numtick) %>% # Pfare = fare per person using numtick
+        # mutate(Dfare = Fare - Pfare) %>% 
+        mutate(Pfare2 = Fare / Famly) %>% # Pfare = fare per person using Famly
         arrange(numtick, Ticket)
 # 
 # tick <- tdf %>%
@@ -21,7 +23,10 @@ tick <- tdf %>%
 #         mutate(Dfare = Fare - Fare1)
 
 
-ggplot(tick, aes(x = Dfare)) + geom_bar()
+# Fare, Pfare, Pfare2
+ggplot(tick, aes(x = Fare)) + geom_histogram()
+ggplot(tick, aes(x = Pfare)) + geom_histogram()
+ggplot(tick, aes(x = Pfare2)) + geom_histogram()
 
 ggplot(tick, aes(x = numtick)) + geom_bar()
 ggplot(tick, aes(x = numtick, y = Famly)) + 
@@ -32,14 +37,21 @@ ggplot(tick, aes(x = numtick, y = Fare)) +
         geom_jitter(height = 0, alpha = .2 ) + 
         geom_smooth() + geom_smooth(method = "lm")
 
-ggplot(tick, aes(x = numtick, y = Fare1)) + 
+ggplot(tick, aes(x = numtick, y = Pfare)) + 
+        geom_jitter(height = 0, alpha = .2 ) + 
+        geom_smooth() + geom_smooth(method = "lm")
+
+ggplot(tick, aes(x = numtick, y = Pfare2)) + 
         geom_jitter(height = 0, alpha = .2 ) + 
         geom_smooth() + geom_smooth(method = "lm")
 
 with(tick, cor(x = numtick, Famly))
 
-ggplot(tick, aes(x = Embarked, y = Dfare)) + geom_boxplot() + facet_grid(. ~ Pclass, margins = TRUE )
+ggplot(tick, aes(x = Pclass, y = Pfare)) + geom_boxplot()
+ggplot(tick, aes(x = Pclass, y = Pfare2)) + geom_boxplot()
 
+ggplot(tick, aes(x = Embarked, y = Pfare)) + geom_boxplot() + facet_grid(. ~ Pclass, margins = TRUE )
+ggplot(tick, aes(x = Embarked, y = Pfare2)) + geom_boxplot() + facet_grid(. ~ Pclass, margins = TRUE )
 
 
 
