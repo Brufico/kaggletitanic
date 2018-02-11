@@ -22,6 +22,9 @@ tick <- tdf %>%
 #         group_by(Ticket) %>%
 #         mutate( numtick = n(), Fare1 = sum(Fare),) %>%
 #         mutate(Dfare = Fare - Fare1)
+with(data = tick[tick$Pclass != 1,], 
+table(Famly,numtick)
+)
 
 
 # Fare, Pfare, Pfare2
