@@ -1,7 +1,12 @@
 #' ---
-#' R-code for preparatory work
+#' title: 'Titanic - Kaggle - Some exploration'
+#' subtitle: "R code for general preparation, called by Titanic_Explore"
+#' author:  "Bruno Fischer Colonimos"
+#' date: "`r format(Sys.Date(), '%d %B %Y')`"
 #' ---
-#'
+
+
+
 
 #
 #  Code for adjusting ggplot2 theme

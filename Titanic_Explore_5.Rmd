@@ -1,0 +1,616 @@
+---
+Title: 'Titanic - Kaggle - Some exploration'
+subTitle: "Explore for classroom use"
+author:  "Bruno Fischer Colonimos"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+# header-includes: \usepackage{graphicx} # for unmodded template
+header-includes: \usepackage{float} # for fig.pos = 'H'
+fontsize: 12pt
+urlcolor: "blue"   ## external
+linkcolor: "red" ## internal
+documentclass: article
+classoption: a4paper
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
+footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
+output:
+  # bookdown::pdf_document2:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    # keep_tex: true
+    fig_caption: yes
+    keep_tex: yes
+    
+  # html_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+  #   fig_caption: yes
+---
+
+***************************
+
+
+<!-- Some Inline HTML (CSS) , formatting tables -->
+
+<style>
+
+table {
+    width: 100%;
+    border-top-style: solid;
+    border-top-width: medium;
+    border-top-color: initial;
+    border-bottom-style: solid;
+    border-bottom-width: medium;
+    border-bottom-color: initial;
+}
+
+</style>
+
+<!-- End Inline HTML -->
+
+
+
+Preliminary code
+================
+
+```{r setup0, include=FALSE}
+# Later
+# =======
+# knitr::opts_chunk$set(echo = TRUE, fig.keep="all" ,fig.width=4, fig.asp= 0.75 , fig.align="center", fig.keep ="all", fig.show="hold", out.width="0.48\\textwidth")
+
+# , fig.align="center"
+# not for HTML : out.width="0.48\\textwidth"
+```
+
+## Libraries and auxiliary code (install before running)
+
+(Not fully echoed here)
+
+### code config parameters
+```{r, echo = TRUE}
+# adjust Gggplot2 theme and color palette
+bwtheme <- TRUE # use ggplot2 bw -theme
+specialpalette <- TRUE # controls the colour of the plots
+showarning <- TRUE # show warnings (deleted empty rows...)
+datmis <- "Ukn" # "Missing value codename"
+```
+
+### Required packages (install before running)
+
+"caret", "ggplot2", pander
+
+
+```{r libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+library(knitr)
+library(pander)
+library(caret)
+library(ggplot2)
+library(dplyr)
+
+
+# Source preparatory code "preparation.R"
+# ========================
+
+source("preparation.R")
+
+# Set aliases
+
+knitr::set_alias(w = "fig.width", a = "fig.asp")
+
+```
+
+```{r setup, echo =FALSE}
+# setup chunk : default options
+knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
+```
+
+Data
+=====
+
+Get it
+-------
+
+The data is downloaded from Kaggle (https://www.kaggle.com/c/titanic) and saved. It is loaded here from disk.
+
+```{r dataget}
+# read
+datadir <-  "data"
+fname <-  "train.csv"
+tdf <- read.csv(file.path(datadir, fname), stringsAsFactors = FALSE)
+
+```
+ 
+ * The data head is shown in table `r .ref("tab:datafirst")`
+
+```{r datafirst}
+pander(head(tdf), caption = tabcap("A glimpse of the data"))     
+```
+
+
+
+Variables organization and work to do  {#variables}
+---------------------------------------------------
+
+
+Variables                 type        Values                Treatment
+------------------------  --------    -------------------   ------------------
+__Demographic variables__
+    * Sex                  String       female ; male       Make factor
+    * Age                  numeric                          many NA's
+    * Agestat              factor      enfant/ado/adulte    new:
+__Family context__
+    * SibSp                numeric                          Combined ->
+    * Parch                numeric                          Combined ->
+    * Famly                numeric                          new: SibSp + Parch
+__Relationship to ship__
+    * Pclass                             1,2,3              Make factor
+    * ticket                            ticket number       not used
+    * Fare                 numeric
+    * Cabin                             Cabin nbr           modified -> Deck
+    * Deck                 String                           new (from Cabin)
+    * Embark               String       C = Cherbourg,       make Factor   
+                                        Q = Queenstown, 
+                                        S = Southampton
+__Survival__              
+    * survived             binary        0/1                Make factor
+
+:`r tabcap(chunklabel = "dataorg", "Data organization")`
+
+
+
+* Quick dataframe summary: table `r .ref("tab:datasum")`
+```{r datasum}
+pander(summary(tdf), caption = tabcap("Data summaries"))
+```
+
+
+
+Data modifications {#modifs}
+----------------------------
+
+* Make `Survived` , `Pclass` and `Embark` factors, 
+* Create `Famly` = `SibSp + Parch` 
+* Create  `Sex.Pclass`
+* Substitute missing values with `r datmis` in variable `Embarked`
+* added variables
+    * `Agestat` = age status : "child", "teen", "adult" (cutoff ages = 12, 18)
+    * `Title` = civility.
+    * `Letticket` = Ticket number begins with letters (yes = 1, no = 0)
+    * `Hascabin` = is the cabin number known? (yes = 1, no = 0)
+    * `Deck`= if the cabin is known, the first letter is the Deck (T, A, B, C...), otherwise  "`r datmis`" 
+    
+
+```{r datamod, warning=FALSE}
+source("Titanic_preprocessing.R")
+# missing values before modifications
+pander(t(numna_before), caption = "Before modifications, Number of missing values")
+
+```
+
+
+
+
+Data Analysis {#analysis}
+==================
+
+Passenger Identity {#demographic}
+-------------------
+
+### Sex and Age {#sexage}
+
+* Gender
+
+```{r ident1, warning=FALSE, fig.cap="Gender distribution"}
+
+# opts.labels("f13"), fails
+
+tbsex <- table(tdf$Sex)
+pander(tbsex, caption = tabcap("Gender distribution"))
+
+ggplot(tdf, aes(Sex)) + geom_bar()
+```
+
+Figure `r .ref("fig:ident1")` shows the gender distribution
+
+```{r ident2, warning=FALSE, fig.cap="Age and Gender"}
+sumAge <- summary(tdf$Age)
+```
+
+* Age : 
+`r pander(sumAge, caption = "Age distribution")`
+
+* Gender and age
+
+```{r ident3,  warning=FALSE, fig.cap="Age and Gender"}
+# nc <- nclass.Sturges(tdf$Age)
+nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
+ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
+        facet_grid(Sex ~ .)
+
+ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
+        scale_x_discrete(limits = rev(levels(tdf$Sex))) +
+        coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
+
+
+ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
+        scale_x_discrete(limits = rev(levels(tdf$Sex))) +
+        coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10)) + 
+        facet_grid( Pclass ~ .) +
+        labs(title = "By Sex and Class")
+```
+
+
+Figure `r .ref("fig:", "ident3")` shows the age distributions of both genders
+
+
+* Age Status :
+```{r Agestatus}
+ggplot(tdf, aes(Agestat)) + geom_bar()
+
+ggplot(tdf, aes(Agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Sex, fill = Sex)) + 
+        facet_grid(Sex ~ .) + 
+        theme(legend.position = "none")
+
+ggplot(tdf, aes(Agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Sex)) + 
+        facet_grid(. ~ Pclass)+
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position = "none")
+
+```
+```{r Agestat2, w = w.11, fig.cap= "Age status by sex and class"}
+ggplot(tdf, aes(Agestat)) + 
+        geom_bar(aes(y = ..prop.., group = Pclass)) + 
+        facet_grid(Sex ~ Pclass) +
+        theme(axis.text.x = element_text(angle = 90))
+```
+
+
+
+
+Family members on board {#fmly}
+---------------
+
+
+```{r family,  fig.cap="Family members on board", warning=FALSE}
+
+pander(cor(tdf[ , c("SibSp","Parch","Famly")]), caption = tabcap("Family members: correlation of the variables"))
+```
+
+```{r family2, fig.cap="Family members on board", warning=FALSE}
+ggplot(tdf) + geom_bar(aes(SibSp))
+ggplot(tdf) + geom_bar(aes(Parch))
+ggplot(tdf) + geom_bar(aes(Famly))
+```
+
+FIgure `r .ref("fig:", "family2")` shows the Family size variablesand their correlation. Famly seems to convey most of the information.
+
+
+Passenger class {#pclass}
+-------------------
+
+figure `r .ref("fig:", "ship")` Shows that the third class accounts for more than 50% of the passengers. 
+
+```{r ship,  fig.cap="Passenger Classes Distribution"}
+
+pander(local({
+        tb <- rbind(table(tdf$Pclass),
+                    prop.table(table(tdf$Pclass)))
+        
+        row.names(tb) = c("frequency", "rel.frequency")
+        tb}), 
+       caption = tabcap("Passenger Class (Pclass)"))
+
+
+
+ggplot(tdf) + geom_bar(aes(Pclass, fill = Pclass, group=1, y = ..prop.. ))
+```
+
+```{r family_class, fig.cap="Passenger demographics by class"}
+
+ggplot(tdf, aes(Sex)) + 
+        geom_bar(aes(y = ..prop.., fill = Pclass, group=Pclass)) + 
+        facet_grid(Pclass ~ .) +
+        labs(y = "Proportion") +
+        theme(legend.position = "none")
+
+nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+ggplot(tdf, aes(Age)) + 
+        geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
+        facet_grid(Pclass ~ .) +
+        theme(legend.position = "none")
+
+
+ggplot(tdf, aes(Age)) + 
+        geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
+        facet_grid(Pclass ~ Sex) +
+        theme(legend.position = "none")
+
+
+
+# ggplot(tdf) + geom_bar(aes(SibSp, y = ..prop..)) + facet_grid(Pclass ~ .)
+# ggplot(tdf) + geom_bar(aes(Parch)) + facet_grid(Pclass ~ .)
+
+ggplot(tdf) + 
+        geom_bar(aes(Famly, y = ..prop.., fill=Pclass)) +
+        facet_grid(Pclass ~ .)+ 
+        scale_x_continuous(breaks=seq(0,10,by=2)) +
+        theme(legend.position = "none")
+
+
+ggplot(tdf) + 
+        geom_bar(aes(Famly, y = ..prop.., fill=Pclass, group=Sex.Pclass)) +
+        facet_grid(Pclass ~ Sex) + 
+        scale_x_continuous(breaks=seq(0,10,by=2)) +
+        theme(legend.position = "none")
+
+```
+
+Figure `r .ref("fig:", "family_class")`. Compare with reference : figure `r .ref("fig:ship")`
+
+
+Deck
+----
+
+```{r Deck, fig.cap= "Distribution of decks"}
+ggplot(tdf) +
+        geom_bar(aes(Deck, y=..prop.., group = 1))
+
+ggplot(tdf[tdf$Deck != datmis,] ) +
+        geom_bar(aes(Deck, y=..prop.., group = 1))
+
+ggplot(tdf[tdf$Deck != datmis,] ) +
+        geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = Pclass)) + 
+        facet_grid(Pclass ~ .) + theme(legend.position = "none")        
+ 
+```
+Figure `r .ref("fig:", "Deck") shows a very partial distribution of decks: the deck of nearly 80% of the passengers is unknown. However, the third graph reveals the strong link between the passencger class and the deck.
+
+Embarkation point
+-----------------
+The passengers could embark at Southampton (S) , Cherbourg or Cobh, alias Queenstown (Q) 
+
+```{r Embarked, a= a.43, fig.cap="Embarkation port (C = Cherbourg, Q = Queenstown, S = Southampton)"}
+
+tdf$Embarked <- factor(tdf$Embarked, levels = c("S", "C", "Q"))
+temb <- table(tdf$Embarked)
+# proportion table
+ptemb <- prop.table(temb)
+df <- rbind(frequency = temb , Rfreq = ptemb) 
+pander(df, digits=2, caption = "Embarkation port")
+
+
+
+# na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
+# 
+# tdfx <- tdf[complete.cases(tdf), ] 
+
+tdfx <- tdf 
+
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=1))
+
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., group=Sex)) + facet_grid(.~Sex) +
+        theme(legend.position = "none")
+
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass,  group=Pclass)) + 
+        facet_grid(Pclass~.) +
+        theme(legend.position = "none")
+
+ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass, group=Pclass)) +
+        facet_grid(Pclass~Sex) +
+        theme(legend.position = "none")
+
+
+```
+
+```{r bydeckv, w = w.12, a = a.21}
+ggplot(tdfx) + 
+        geom_bar(aes(Embarked, y=..prop.., fill = Pclass)) +
+        facet_grid(Deck~Sex) +
+        theme(legend.position = "none") +
+        labs(title = "Broken down by deck")
+```
+
+
+Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major embarkation point (`r  100 * df["Rfreq", "S"]`% of the passengers). However, this is not as true for the women, particularly for the women with a first-class ticket.( only about 50% of them embarked at Southampton) 
+
+
+The Fare
+--------
+
+```{r fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"}
+
+# ncf <- nclass.FD(tdf$Fare) 
+ncf <- 50
+ggplot(tdf) + geom_histogram(aes(Fare), bins = ncf)
+# ggplot(tdf) + geom_histogram(aes(Fare, y=..density.., fill=Pclass), bins = ncf) + 
+#         facet_grid(Pclass ~.) 
+
+ggplot(tdf) + geom_boxplot(aes(Pclass,Fare, fill = Pclass), color = "grey50") + 
+        scale_x_discrete(limits = rev(levels(tdf$Pclass))) +
+        coord_flip() +
+        facet_grid(Sex ~.) 
+```
+
+```{r faredeck, w= w.11, fig.asp = 2 , fig.cap = "fare by deck and class"}
+
+# unique(tdf$Deck)
+local( {
+        tdf1 <- tdf
+        # tdf1$Deck <- reorder(tdf1$Deck, tdf1$Fare, median)
+        tdf1$Deck <- factor(tdf$Deck)
+        ggplot(tdf1) + 
+                geom_boxplot(aes(Deck, Fare), outlier.alpha = 0.2) +
+                coord_flip() +
+                facet_grid( Pclass ~ ., switch = "y")
+}
+)
+```
+
+
+
+
+Survival
+--------
+
+### overall
+
+```{r survival, fig.cap="Overall survival"}
+pander(prop.table(table(tdf$Survived)), digits=2, caption = "Suvival distributiond")
+
+ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
+```
+
+### By category
+
+```{r survival-by, fig.cap="Survival by sex or Passenger Class"}
+# by sex
+pander(prop.table(table(tdf$Survived, tdf$Sex),
+                  margin = 2),
+       digits=2,
+       caption = "Survival by Sex")
+
+# by class
+pander(prop.table(table(tdf$Survived, tdf$Pclass),
+                  margin = 2),
+       digits=2,
+       caption = "Survival by Passenger class")
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 
+        facet_grid(Sex ~.)
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., group = Pclass)) + 
+        facet_grid(Pclass ~.) 
+
+
+```
+
+* Class and sex
+
+```{r survival-by2, fig.cap="Survival by Sex and Class"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex) +
+        theme(legend.position = "none")
+```
+
+
+* Class , sex, Port of embarkation
+
+```{r survival-by3, fig.cap="Survival by Sex and Class / Embarked"}
+
+ggplot(tdfx[tdfx$Embarked == "S", ]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex)+
+        labs(Title = "Embarked at Southampton")+
+        theme(legend.position = "none")
+
+
+ggplot(tdfx[tdfx$Embarked == "C", ]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex)+
+        labs(Title = "Embarked at Cherbourg")+
+        theme(legend.position = "none")
+
+
+ggplot(tdfx[tdfx$Embarked == "Q", ]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Sex)+
+        labs(Title = "Embarked at Queenstown")+
+        theme(legend.position = "none")
+
+
+
+```
+
+Class and Age see figure `r .ref("fig:survival-by4")`
+
+```{r survival-by4, fig.cap="Age by Survival  and Class", warning=FALSE}
+
+ggplot(tdf) + 
+        geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+        facet_grid(Pclass ~ Sex) +
+        labs(Title= "All") + 
+        theme(legend.position = "none")
+        
+
+ggplot(tdf[tdf$Survived == "Yes", ]) + 
+        geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+        facet_grid(Pclass ~ Sex) +
+        labs(title= "Survivors") + 
+        theme(legend.position = "none")
+
+ggplot(tdf[tdf$Survived == "No", ]) + 
+        geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+        facet_grid(Pclass ~ Sex) +
+        labs(title= "Non-Survivors") + 
+        theme(legend.position = "none")
+```
+
+* Class and Agestat, Agestat and sex
+
+```{r survival-by5, fig.cap="Survival by age status, Class and sex"}
+
+agesex_class <- table(tdf$Agestat, tdf$Sex, tdf$Pclass)
+pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
+
+
+
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat) + 
+        labs(title = "Sex = All") +
+        theme(legend.position = "none")
+
+ggplot(tdf[tdf$Sex == "female" ,]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat) +
+        labs(title = "Sex ='female'") + 
+        theme(legend.position = "none")
+
+ggplot(tdf[tdf$Sex == "male" ,]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat)+
+        labs(title = "Sex = 'male'") + 
+        theme(legend.position = "none")
+
+```
+
+
+```{r survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Pclass))+ 
+        facet_grid(Deck ~ Agestat)+
+        labs(title = "by Deck") # + theme(legend.position = "none")
+```
+
+```{r survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Sex))+ 
+        facet_grid(Deck ~ Agestat)+
+        labs(Title = "by Deck") # + theme(legend.position = "none")
+```
+
+
