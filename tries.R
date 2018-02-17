@@ -23,14 +23,19 @@ tick <- tdf %>%
 #         mutate( numtick = n(), Fare1 = sum(Fare),) %>%
 #         mutate(Dfare = Fare - Fare1)
 with(data = tick[tick$Pclass != 1,], 
-table(Famly,numtick)
-)
+     table(Famly,numtick))
+
+as.data.frame(tick[tick$Famly ==0 & tick$numtick == 3, c("Name", "Ticket", "Sex.Pclass", "Fare") ])
+
+as.data.frame(tick[tick$Ticket == 248727 , c("Name", "Ticket", "Famly", "Sex.Pclass", "Fare") ])
 
 
 # Fare, Pfare, Pfare2
-ggplot(tick, aes(x = Fare)) + geom_histogram()
-ggplot(tick, aes(x = Pfare)) + geom_histogram()
-ggplot(tick, aes(x = Pfare2)) + geom_histogram()
+nc <- nclass.FD(tick$Pfare3)
+ggplot(tick, aes(x = Fare)) + geom_histogram(bins = nc)
+ggplot(tick, aes(x = Pfare)) + geom_histogram(bins = nc)
+ggplot(tick, aes(x = Pfare2)) + geom_histogram(bins = nc)
+ggplot(tick, aes(x = Pfare3)) + geom_histogram(bins = nc)
 
 ggplot(tick, aes(x = numtick)) + geom_bar()
 ggplot(tick, aes(x = numtick, y = Famly)) + 
@@ -49,6 +54,10 @@ ggplot(tick, aes(x = numtick, y = Pfare2)) +
         geom_jitter(height = 0, alpha = .2 ) + 
         geom_smooth() + geom_smooth(method = "lm")
 
+ggplot(tick, aes(x = numtick, y = Pfare3)) + 
+        geom_jitter(height = 0, alpha = .2 ) + 
+        geom_smooth() + geom_smooth(method = "lm")
+
 with(tick, cor(x = numtick, Famly))
 
 ggplot(tick, aes(x = Pclass, y = Pfare)) + geom_boxplot()
@@ -62,7 +71,7 @@ ggplot(tick, aes(x = Embarked, y = Pfare3)) + geom_boxplot() + facet_grid(. ~ Pc
 ggplot(tick, aes(x = Deck, y = Pfare2)) + geom_boxplot() + facet_grid(. ~ Pclass, margins = TRUE )
 ggplot(tick, aes(x = Deck, y = Pfare3)) + geom_boxplot() + facet_grid(. ~ Pclass, margins = TRUE )
 
-ggplot(tick, aes(x = numtick, y = Fare1)) + geom_boxplot(aes(group = numtick )) # + facet_grid(. ~ Pclass, margins = TRUE )
+ggplot(tick, aes(x = numtick, y = Pfare3)) + geom_boxplot(aes(group = numtick )) # + facet_grid(. ~ Pclass, margins = TRUE )
 
 ggplot(data = tick, aes(x=Survived)) + 
         geom_bar(aes( y = ..prop.., 
@@ -75,7 +84,13 @@ ggplot(data = tick, aes(x=Survived)) +
 
 ggplot(data = tick, aes(x=Pclass)) + 
         geom_bar(aes( y = ..prop.., 
-                      group = numtick)) + facet_grid(. ~ Famly, margins = TRUE)
+                      group = Famly)) + facet_grid(. ~ Famly, margins = TRUE) +
+        labs(title = " Family Size and Class: proportion of each class")
+
+ggplot(data = tick, aes(x=Pclass)) + 
+        geom_bar(aes( #y = ..prop.., 
+                      group = Famly)) + facet_grid(. ~ Famly, margins = TRUE) +
+        labs(title = " Family Size and Class: counts of classes")
 
 ggplot(data = tick, aes(x=Pclass)) + 
         geom_bar(aes( y = ..prop.., 

@@ -209,11 +209,17 @@ Passenger Identity {#demographic}
 ```{r ident1, warning=FALSE, fig.cap="Gender distribution"}
 
 # opts.labels("f13"), fails
+tbsex2 <- local({
+        tbsex <- table(tdf$Sex)
+        ptbsex <- prop.table(tbsex)
+        tbsex2 <- rbind(tbsex, ptbsex)
+        row.names(tbsex2) <- c( "Frequency", "Rel.Frequency")
+        tbsex2
+})
 
-tbsex <- table(tdf$Sex)
-pander(tbsex, caption = tabcap("Gender distribution"))
+pander(tbsex2, digits = 3, caption = tabcap("Gender distribution"))
 
-ggplot(tdf, aes(Sex)) + geom_bar()
+ggplot(tdf, aes(Sex)) + geom_bar(aes(y= ..prop.., group = 1))
 ```
 
 Figure `r .ref("fig:ident1")` shows the gender distribution
@@ -231,9 +237,12 @@ sumAge <- summary(tdf$Age)
 # nc <- nclass.Sturges(tdf$Age)
 nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
 ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
+ggplot(tdf, aes(Age)) + geom_histogram(bins=nc) + 
+        facet_grid(Pclass ~ .)
 ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
         facet_grid(Sex ~ .)
-
+ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
+        facet_grid(Pclass ~ Sex)
 ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         scale_x_discrete(limits = rev(levels(tdf$Sex))) +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
@@ -260,7 +269,8 @@ ggplot(tdf, aes(Agestat)) +
         theme(legend.position = "none")
 
 ggplot(tdf, aes(Agestat)) + 
-        geom_bar(aes(y = ..prop.., group = Sex)) + 
+        # geom_bar() +
+        geom_bar(aes(y = ..prop.., group = Pclass)) +
         facet_grid(. ~ Pclass)+
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position = "none")
 
@@ -290,15 +300,15 @@ ggplot(tdf) + geom_bar(aes(Parch))
 ggplot(tdf) + geom_bar(aes(Famly))
 ```
 
-FIgure `r .ref("fig:", "family2")` shows the Family size variablesand their correlation. Famly seems to convey most of the information.
+Figure `r .ref("fig:", "family2")` shows the Family size variablesand their correlation. Famly seems to convey most of the information.
 
 
 Passenger class {#pclass}
 -------------------
 
-figure `r .ref("fig:", "ship")` Shows that the third class accounts for more than 50% of the passengers. 
+figure `r .ref("fig:", "ship")` Shows that the third class accounts for about 55% of the passengers. 
 
-```{r ship,  fig.cap="Passenger Classes Distribution"}
+```{r ship,  fig.cap="Passenger Classes Distribution", w = w.13, a = a.13}
 
 pander(local({
         tb <- rbind(table(tdf$Pclass),
@@ -310,10 +320,11 @@ pander(local({
 
 
 
-ggplot(tdf) + geom_bar(aes(Pclass, fill = Pclass, group=1, y = ..prop.. ))
+ggplot(tdf) + geom_bar(aes(Pclass, fill = Pclass, group=1, y = ..prop.. )) +
+        labs(title = "55% of the passengers are 3rd class")
 ```
 
-```{r family_class, fig.cap="Passenger demographics by class"}
+```{r family_class, warning=FALSE , fig.cap="Passenger demographics by class"}
 
 ggplot(tdf, aes(Sex)) + 
         geom_bar(aes(y = ..prop.., fill = Pclass, group=Pclass)) + 
@@ -354,6 +365,11 @@ ggplot(tdf) +
 ```
 
 Figure `r .ref("fig:", "family_class")`. Compare with reference : figure `r .ref("fig:ship")`
+
+```{r Pclass_by_Famly, w = w.11, a = a.21}
+ggplot(data = tdf, mapping = aes(Pclass, fill= Pclass)) + geom_bar() + facet_grid(factor(Famly) ~ .)
+
+```
 
 
 Deck
