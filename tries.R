@@ -1,5 +1,5 @@
 
-update.packages()
+# update.packages()
 
 # install.packages(c( "pander", "caret", "tidyverse" , "ggplot2" ))
 library(knitr)
@@ -32,10 +32,10 @@ as.data.frame(tick[tick$Ticket == 248727 , c("Name", "Ticket", "Famly", "Sex.Pcl
 
 # Fare, Pfare, Pfare2
 nc <- nclass.FD(tick$Pfare3)
-ggplot(tick, aes(x = Fare)) + geom_histogram(bins = nc)
-ggplot(tick, aes(x = Pfare)) + geom_histogram(bins = nc)
-ggplot(tick, aes(x = Pfare2)) + geom_histogram(bins = nc)
-ggplot(tick, aes(x = Pfare3)) + geom_histogram(bins = nc)
+ggplot(tick, aes(x = Fare)) + geom_histogram(bins = nc) + facet_grid(Pclass ~ .)
+ggplot(tick, aes(x = Pfare)) + geom_histogram(bins = nc) + facet_grid(Pclass ~ .)
+ggplot(tick, aes(x = Pfare2)) + geom_histogram(bins = nc) + facet_grid(Pclass ~ .)
+ggplot(tick, aes(x = Pfare3)) + geom_histogram(bins = nc)+ facet_grid(Pclass ~ .)
 
 ggplot(tick, aes(x = numtick)) + geom_bar()
 ggplot(tick, aes(x = numtick, y = Famly)) + 
@@ -81,7 +81,7 @@ ggplot(data = tick, aes(x=Survived)) +
         geom_bar(aes( y = ..prop.., 
                       group = Famly)) + 
         facet_grid(. ~ Famly)
-
+#  family size==class
 ggplot(data = tick, aes(x=Pclass)) + 
         geom_bar(aes( y = ..prop.., 
                       group = Famly)) + facet_grid(. ~ Famly, margins = TRUE) +
@@ -91,6 +91,30 @@ ggplot(data = tick, aes(x=Pclass)) +
         geom_bar(aes( #y = ..prop.., 
                       group = Famly)) + facet_grid(. ~ Famly, margins = TRUE) +
         labs(title = " Family Size and Class: counts of classes")
+
+
+ggplot(data = tick, aes(x=Famly)) +
+        geom_bar(aes( y = ..prop.., 
+                group = Pclass)) + facet_grid(. ~ Pclass, margins = TRUE)
+
+tick <- tick %>%
+        mutate(Famly2 = ifelse(Famly + 1 >= numtick, Famly + 1, numtick))
+
+tick <- tick %>%
+        mutate(Famsize = factor (ifelse( Famly2 == 1, 
+                                        "1single", 
+                                        ifelse(Famly2 <= 4, "2Smallfamily", "3Largefamily"))))
+
+# Family size by class
+ggplot(data = tick, aes(x=Famsize)) +
+        geom_bar(aes( y = ..prop.., 
+                      group = Pclass)) + facet_grid(Sex ~ Pclass, margins = TRUE)
+
+# Family size by sex and class
+ggplot(data = tick, aes(x=Famsize)) +
+        geom_bar(aes( y = ..prop.., 
+                      group = Pclass)) + facet_grid(Sex ~ Pclass, margins = TRUE)
+
 
 ggplot(data = tick, aes(x=Pclass)) + 
         geom_bar(aes( y = ..prop.., 
