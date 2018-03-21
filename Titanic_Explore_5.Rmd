@@ -1,6 +1,6 @@
 ---
-Title: 'Titanic - Kaggle - Some exploration'
-subTitle: "Explore for classroom use"
+title: 'Titanic - Kaggle - Some exploration'
+subtitle: "Explore for classroom use"
 author:  "Bruno Fischer Colonimos"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 # header-includes: \usepackage{graphicx} # for unmodded template
@@ -31,6 +31,8 @@ output:
   #   toc_depth: 4
   #   fig_caption: yes
 ---
+
+
 
 ***************************
 
@@ -74,10 +76,7 @@ Preliminary code
 ### code config parameters
 ```{r, echo = TRUE}
 # adjust Gggplot2 theme and color palette
-bwtheme <- TRUE # use ggplot2 bw -theme
-specialpalette <- TRUE # controls the colour of the plots
-showarning <- TRUE # show warnings (deleted empty rows...)
-datmis <- "Ukn" # "Missing value codename"
+"
 ```
 
 ### Required packages (install before running)

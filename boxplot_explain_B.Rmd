@@ -1,0 +1,151 @@
+---
+title: "Boxplots - Valeurs extrêmes"
+subtitle: "Valeurs 'éloignées' et graphique en boîte-et-moustaches"
+author: "Bruno Fischer Colonimos"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+# header-includes: \usepackage{graphicx} # for unmodded template
+header-includes: \usepackage{float} # for fig.pos = 'H'
+fontsize: 12pt
+urlcolor: "blue"   ## external
+linkcolor: "red" ## internal
+documentclass: article
+classoption: a4paper
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
+footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
+output:
+  # bookdown::pdf_document2:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
+    number_sections: yes
+    # toc: no
+    # toc_depth: 4
+    # keep_tex: true
+    fig_caption: yes
+---
+
+```{r libsetup, include=FALSE}
+bwtheme <- TRUE # use ggplot2 bw -theme
+specialpalette <- FALSE # controls the colour of the plots
+showarning <- TRUE # show warnings (deleted empty rows...)
+datmis <- "Ukn" # "Missing value codename
+library(ggplot2)
+library(pander)
+library(knitr)
+source("preparation.R")
+knitr::opts_chunk$set(echo = FALSE, fig.width = w.12, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = FALSE)
+```
+
+***********
+
+Données
+=======
+
+Nous utiliserons les données quantitatives suivantes:
+
+```{r data1}
+# parameters
+# -----------
+size = 14
+
+sans_lab <- "Sans outlier"
+avec_lab <- "Avec outlier"
+
+
+# Data generation
+# -----------
+set.seed(18)
+y <- runif(14, min = 5, max = 15)
+yo <- round(y[order(y)], 0) # original data, without outliers
+yo_extra <- yo
+yo_extra[c(13,14)] <- c(15, 21) # modified data, with 1 outlier
+
+#  put together for display
+dfy0 <- data.frame(y0 = yo, y1 = yo_extra)
+#  show data
+pander(t(dfy0))
+```
+Remarque: les deux jeux de données $y_0$ et $y_1$ sont identiques, à l'exception des deux dernières valeurs. Le second jeu contient une valeur "éloignée", ou "aberrante", c'est-à-dire très éloignée de la distribution des autres valeurs.
+
+Les deux distributions ont les mêmes quartiles.
+
+```{r quantiles}
+
+qo <- quantile(yo, probs = c(0.25, 0.5, 0.75), type = 2)
+qo_extra <- quantile(yo_extra, probs = c(0.25, 0.5, 0.75), type = 2)
+
+# remarkable values
+IQR <- qo[3] - qo[1] # ecart interquartile
+ymax <- max(yo_extra) # maxi
+
+
+names(qo) <- c("Premier quartile Q1", "Mediane", "3eme quartile Q3")
+
+# show quartiles
+pander(t(qo))
+```
+
+Représentation des deux jeux de données avec des graphiques en *boîte et moustaches*
+===================================================================================
+```{r Graph, fig.width= w.34 * 1.1, fig.asp = a.12}
+# préparation des données
+y <- c(yo, yo_extra)
+x <- factor(rep(c(sans_lab, avec_lab), each = size), levels = c(sans_lab, avec_lab))
+
+dfx <- data.frame(x = x, y = y, 
+                  lb = c(rep("", size * 2 - 1), '"Outlier"'))
+
+
+b <- ggplot(dfx, aes(x = x, y = y)) + geom_boxplot(aes(fill = x)) + 
+        # scale_y_continuous(limits = c(0,30)) +
+        # scale_x_discrete("") + 
+        geom_text( aes(label = lb), hjust = -.2) +
+        theme(legend.position = "none", plot.title = element_text(hjust = .5)) + 
+        labs(title = 'Boxplots - représentation des "valeurs éloignées" ("outliers")', x = "" )
+b
+
+
+```
+
+Explication
+===========
+
+Avec la version simplifiée de ce graphique (vue en cours), le second jeu de données serait représenté avec une moustache supérieure plus longue, faisant paraître différents ces jeux de données, alors que la différence se limite à une seule donnée atypique.
+
+La variante la plus courante (et la plus utile) du graphique en boîte et moustaches intègre une détection des valeurs éloignées (appelés "outliers" en anglais), de la façon suivante:
+
+1. On calcule l'écart interquartile IQR (la hauteur de la boîte). Dans notre exemple, IQR = $Q_3 - Q_1$ = `r IQR`.
+2. 0n calcule alors une limite supérieure et une limite inférieure:
+
+    * limite inférieure = $Q_1 - 1.5 \cdot IQR$ = `r qo[1] - 1.5 * IQR`
+    * limite supérieure = $Q_3 + 1.5 \cdot IQR$ = `r qo[3] + 1.5 * IQR`
+
+Les valeurs qui sont à l'extérieur de ces limites sont considérées comme des "outliers", et traités séparément. Les autres valeurs sont traitées normalement.
+C'est pourqoi la seule valeur "extrême" de nos deux jeux de données (`r ymax`) est représentée individuellement, à droite et en haut du graphique. 
+
+Naturellement, en pratique, les calculs sont laissés au logiciel, et l'analyste se fonde sur le graphique produit par celui-ci.
+
+Utilité
+=======
+
+Il est très utile d'attirer l'attention de l'analyste sur les valeurs éloignées d'une distribution. Si ces valeurs semblent très éloignées, on se demandera pourquoi ces valeurs sont si loin de la distribution principale, et on cherchera des explications.
+
+**Par exemple**, si représente par un graphique en boîte et moustaches le trafic entrant annuel passagers des stations du métro parisien (en 2015), on obtient:
+
+```{r metro, fig.width= w.11, fig.asp = a.13}
+metrodf <- read.csv(file = file.path("data", "metro.csv"), sep = ";")
+metrodf <- metrodf[ ,c("Station","Trafic")]
+
+me <- median(metrodf$Trafic)
+
+ggplot(data = metrodf)+
+        geom_boxplot(aes(x = "", y = Trafic)) + 
+        labs(title = "Trafic entrant par station" , x ="") +
+        coord_flip() +
+        theme(plot.title = element_text(hjust = .5))
+```
+
+**Commentaire:** On voit bien que, alors que la plupart des stations ont un trafic aux alentours du trafic médian (`r round(me / (10^6), 2)` millions de voyageurs), un  certain nombre  de stations ont un trafic plus de 10 fois plus élevé. Ce graphique nous invite donc à chercher des explications à ces variations remarquables.
+
+
