@@ -76,7 +76,10 @@ Preliminary code
 ### code config parameters
 ```{r, echo = TRUE}
 # adjust Gggplot2 theme and color palette
-"
+bwtheme <- TRUE
+specialpalette <- FALSE
+showarning <- FALSE
+datmis <- "Ukn"
 ```
 
 ### Required packages (install before running)
@@ -235,23 +238,37 @@ sumAge <- summary(tdf$Age)
 ```{r ident3,  warning=FALSE, fig.cap="Age and Gender"}
 # nc <- nclass.Sturges(tdf$Age)
 nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+
+ggnolegend <- theme(legend.position = "none")
+
 ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
-ggplot(tdf, aes(Age)) + geom_histogram(bins=nc) + 
-        facet_grid(Pclass ~ .)
+
+ggplot(tdf, aes(Age)) + geom_histogram(aes(fill = Pclass), bins=nc) + 
+        facet_grid(Pclass ~ .) + 
+        labs(title = "Age by Class") + ggnolegend
+
 ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
         facet_grid(Sex ~ .)
-ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density..),bins=nc) + 
-        facet_grid(Pclass ~ Sex)
+
+ggplot(tdf, aes(Age)) + geom_histogram(aes(y=..density.., fill = Pclass),bins=nc) + 
+        facet_grid(Pclass ~ Sex) +
+        labs(title = "Age by Class + Sex") + ggnolegend
+
 ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         scale_x_discrete(limits = rev(levels(tdf$Sex))) +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10))
 
+ggplot(tdf, aes(x=Pclass, y=Age, fill = Pclass)) + geom_boxplot() +
+        scale_x_discrete(limits = rev(levels(factor(tdf$Pclass)))) +
+        coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10)) + 
+        # facet_grid( Pclass ~ .) 
+        labs(title = "Age By Class")+ ggnolegend
 
 ggplot(tdf, aes(x=Sex, y=Age)) + geom_boxplot() +
         scale_x_discrete(limits = rev(levels(tdf$Sex))) +
         coord_flip() + scale_y_continuous(breaks = seq(0,90, by=10)) + 
-        facet_grid( Pclass ~ .) +
-        labs(title = "By Sex and Class")
+        facet_grid( Pclass ~ .) + 
+        labs(title = "By Sex and Class") + ggnolegend
 ```
 
 
@@ -366,7 +383,9 @@ ggplot(tdf) +
 Figure `r .ref("fig:", "family_class")`. Compare with reference : figure `r .ref("fig:ship")`
 
 ```{r Pclass_by_Famly, w = w.11, a = a.21}
-ggplot(data = tdf, mapping = aes(Pclass, fill= Pclass)) + geom_bar() + facet_grid(factor(Famly) ~ .)
+ggplot(data = tdf, mapping = aes(Pclass,  fill= Pclass)) + 
+        geom_bar() +
+                facet_grid(factor(Famly) ~ .)
 
 ```
 
@@ -513,11 +532,13 @@ ggplot(tdf) +
 
 ```{r survival-by2, fig.cap="Survival by Sex and Class"}
 
-ggplot(tdf) + 
+ggnolegend <- theme(legend.position = "none")
+
+ggplot(tdf) +
         geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Pclass ~ Sex) +
-        theme(legend.position = "none")
+                     group = Pclass, fill = Pclass)) + 
+        facet_grid(Pclass ~ Sex) + ggnolegend
+        
 ```
 
 
@@ -529,15 +550,16 @@ ggplot(tdfx[tdfx$Embarked == "S", ]) +
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ Sex)+
-        labs(Title = "Embarked at Southampton")+
+        labs(title = "Emb. Southampton") + 
         theme(legend.position = "none")
+
 
 
 ggplot(tdfx[tdfx$Embarked == "C", ]) + 
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ Sex)+
-        labs(Title = "Embarked at Cherbourg")+
+        labs(title = "Emb. Cherbourg")+
         theme(legend.position = "none")
 
 
@@ -545,7 +567,7 @@ ggplot(tdfx[tdfx$Embarked == "Q", ]) +
         geom_bar(aes(Survived, y = ..prop.., 
                      group = Pclass, fill = Pclass))+ 
         facet_grid(Pclass ~ Sex)+
-        labs(Title = "Embarked at Queenstown")+
+        labs(title = "Emb. Queenstown")+
         theme(legend.position = "none")
 
 
@@ -559,7 +581,7 @@ Class and Age see figure `r .ref("fig:survival-by4")`
 ggplot(tdf) + 
         geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
         facet_grid(Pclass ~ Sex) +
-        labs(Title= "All") + 
+        labs(title= "All") + 
         theme(legend.position = "none")
         
 
