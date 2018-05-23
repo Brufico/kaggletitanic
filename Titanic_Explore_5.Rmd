@@ -154,7 +154,7 @@ __Relationship to ship__
     * Pclass                             1,2,3              Make factor
     * ticket                            ticket number       not used
     * Fare                 numeric
-    * Cabin                             Cabin nbr           modified -> Deck
+    * Cabin                             Cabin number        used -> Deck
     * Deck                 String                           new (from Cabin)
     * Embark               String       C = Cherbourg,       make Factor   
                                         Q = Queenstown, 
@@ -226,7 +226,7 @@ ggplot(tdf, aes(Sex)) + geom_bar(aes(y= ..prop.., group = 1))
 
 Figure `r .ref("fig:ident1")` shows the gender distribution
 
-```{r ident2, warning=FALSE, fig.cap="Age and Gender"}
+```{r ident2, warning=FALSE, fig.cap="Age"}
 sumAge <- summary(tdf$Age)
 ```
 
@@ -316,7 +316,7 @@ ggplot(tdf) + geom_bar(aes(Parch))
 ggplot(tdf) + geom_bar(aes(Famly))
 ```
 
-Figure `r .ref("fig:", "family2")` shows the Family size variablesand their correlation. Famly seems to convey most of the information.
+Figure `r .ref("fig:", "family2")` shows the Family size variables and their correlation. Famly seems to convey most of the information.
 
 
 Passenger class {#pclass}
