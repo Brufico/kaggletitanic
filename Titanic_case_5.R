@@ -204,7 +204,7 @@ if (outresults) for (i in seq_along(p_famly)) p_famly[[i]]
 #'                 
 #' figure `r .ref("fig:", "ship")` Shows that the third class accounts for about 55% of the passengers. 
         
-#+ ship, fig.cap="Passenger Classes Distribution", w = w.13, a = a.13}
+#+ ship, fig.cap="Passenger Classes Distribution", w = w.13, a = a.13
 
 tb_pclass <- local({
         tb <- rbind(table(tdf$Pclass),
@@ -212,7 +212,7 @@ tb_pclass <- local({
         row.names(tb) = c("frequency", "rel.frequency")
         tb})
 
-if (outresults) pander(tb_pclass,caption = tabcap("Passenger Class (Pclass)"))
+if (outresults) {pander(tb_pclass, caption = tabcap("Passenger Class (Pclass)"))}
 
 
 p_pclass <- local({
@@ -222,4 +222,4 @@ p_pclass <- local({
         labs(title = ptitle)
 })        
 
-
+if (outresults) p_pclass
