@@ -223,3 +223,298 @@ p_pclass <- local({
 })        
 
 if (outresults) p_pclass
+
+
+#' ### Passengers deographics by class
+
+p_age_by <- local({
+        nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+        
+        list(
+                sex = ggplot(tdf, aes(Sex)) + 
+                        geom_bar(aes(y = ..prop.., fill = Pclass, group=Pclass)) + 
+                        facet_grid(Pclass ~ .) +
+                        labs(y = "Proportion", title = "Sex by Class") + 
+                        ggnolegend,
+                
+                age = ggplot(tdf, aes(Age)) + 
+                        geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
+                        facet_grid(Pclass ~ .) +
+                        ggnolegend,
+                famly = ggplot(tdf) + 
+                        geom_bar(aes(Famly, y = ..prop.., fill=Pclass)) +
+                        facet_grid(Pclass ~ .)+ 
+                        scale_x_continuous(breaks=seq(0,10,by=2)) +
+                        ggnolegend,
+                by_famly = ggplot(data = tdf, mapping = aes(Pclass,  fill= Pclass)) + 
+                        geom_bar() +
+                        facet_grid(factor(Famly) ~ .)+
+                        ggnolegend
+        )
+})
+
+
+
+Deck
+----
+        
+#+ Deck, fig.cap= "Distribution of decks"
+p_deck = list(
+        deck_all = ggplot(tdf) +
+                geom_bar(aes(Deck, y=..prop.., group = 1)),
+        deck_known = ggplot(tdf[tdf$Deck != datmis,] ) +
+                geom_bar(aes(Deck, y=..prop.., group = 1)),
+        by_class = ggplot(tdf[tdf$Deck != datmis,] ) +
+                geom_bar(aes(Deck, y=..prop.., fill = Pclass, group = Pclass)) + 
+                facet_grid(Pclass ~ .) + ggnolegend
+)
+
+
+
+#' Figure `r .ref("fig:", "Deck") shows a very partial distribution of decks:
+#' the deck of nearly 80% of the passengers is unknown. However, the third graph
+#' reveals the strong link between the passencger class and the deck.
+
+
+
+#' Embarkation point
+#' ----
+
+# table
+tdf$Embarked <- factor(tdf$Embarked, levels = c("S", "C", "Q"))
+
+tb_embark <- local({
+        temb <- table(tdf$Embarked)
+        # proportion table
+        ptemb <- prop.table(temb)
+        df <- rbind(frequency = temb , Rfreq = ptemb) 
+})
+
+if (outresults) pander(tb_embark, digits=2, caption = "Embarkation port")
+
+
+# na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
+# tdfx <- tdf[complete.cases(tdf), ] 
+
+p_embark <- local({
+        list(
+                all = ggplot(tdf) + 
+                        geom_bar(aes(Embarked, y=..prop.., group=1)),
+                by_sex = ggplot(tdf) + 
+                        geom_bar(aes(Embarked, y=..prop.., group=Sex)) +
+                        facet_grid(.~Sex) + ggnolegend,
+                by_class = ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass,  group=Pclass)) + 
+                        facet_grid(Pclass~.) +
+                        ggnolegend,
+                by_sex_class = ggplot(tdfx) + 
+                        geom_bar(aes(Embarked, y=..prop.., 
+                                     fill = Pclass, group=Pclass)) +
+                        facet_grid(Pclass~Sex) + ggnolegend
+        )
+})
+
+if (outresults) p_embark
+
+
+#' Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major
+#' embarkation point (`r  100 * df["Rfreq", "S"]`% of the passengers). However,
+#' this is not as true for the first-class passengers, particularly for the
+#' women of the first-class : only about 50% of them embarked at
+#' Southampton, and about 50% embarked at Cherbourg
+
+
+
+#' The Fare
+#' --------
+        
+#+ fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"}
+
+p_fare <- local({
+        # ncf <- nclass.FD(tdf$Fare) 
+        ncf <- 50
+        list(
+                all_hist = ggplot(tdf) + geom_histogram(aes(Fare), bins = ncf),
+                class_hist = ggplot(tdf) +
+                        geom_histogram(aes(Fare, y=..density.., 
+                                   fill=Pclass), bins = ncf),
+                class_facet_hist = ggplot(tdf) + 
+                        geom_histogram(aes(Fare, y=..density.., 
+                                           fill=Pclass), bins = ncf) +
+                        facet_grid(Pclass ~.),
+                class_box <- ggplot(tdf) + 
+                        geom_boxplot(aes(Pclass,Fare, 
+                                         fill = Pclass), color = "grey50") + 
+                        scale_x_discrete(limits = rev(levels(tdf$Pclass))) +
+                        coord_flip() + ggnolegend,
+                class_sex_box = ggplot(tdf) + 
+                        geom_boxplot(aes(Pclass,Fare, 
+                                         fill = Pclass), color = "grey50") + 
+                        scale_x_discrete(limits = rev(levels(tdf$Pclass))) +
+                        coord_flip() +
+                        facet_grid(Sex ~.) 
+        )
+})
+
+if (outresults) p_fare
+
+
+#'  
+
+#' survival
+#' ============
+#' 
+
+
+
+#' ### overall
+
+#+ survival, fig.cap="Overall survival"}
+tb_survived <- prop.table(table(tdf$Survived))
+
+if (outresults) pander(tb_survived, digits=2, 
+                       caption = "Suvival global distribution")
+
+p_survived <- ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
+
+
+if (outresults) p_survived
+        
+#' ### By category
+
+#+ survival-by, fig.cap="Survival by sex or Passenger Class"}
+# by sex
+
+# tables
+tb_survived_by <- list( sex =prop.table(table(tdf$Survived, tdf$Sex),
+                             margin = 2),
+                        class =prop.table(table(tdf$Survived, tdf$Pclass),
+                                          margin = 2)
+                        )
+
+if (outresults) {pander(tb_survived_by, digits=2,
+                       caption = "Survival by Sex , class")
+}
+
+
+# plots
+
+p_survived_by <- local({
+        list(
+                sex = ggplot(tdf) + 
+                        geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 
+                        facet_grid(Sex ~.),
+                class = ggplot(tdf) + 
+                        geom_bar(aes(Survived, y = ..prop.., group = Pclass, fill = Pclass)) + 
+                        facet_grid(Pclass ~.) + ggnolegend,
+                class_sex = ggplot(tdf) +
+                        geom_bar(aes(Survived, y = ..prop.., 
+                                     group = Pclass, fill = Pclass)) + 
+                        facet_grid(Pclass ~ Sex) + ggnolegend,
+                class_sex_south = ggplot(tdfx[tdfx$Embarked == "S", ]) + 
+                        geom_bar(aes(Survived, y = ..prop.., 
+                                     group = Pclass, fill = Pclass))+ 
+                        facet_grid(Pclass ~ Sex)+
+                        labs(title = "Emb. Southampton") + ggnolegend,
+                class_sex_cherbourg = ggplot(tdfx[tdfx$Embarked == "C", ]) + 
+                        geom_bar(aes(Survived, y = ..prop.., 
+                                     group = Pclass, fill = Pclass))+ 
+                        facet_grid(Pclass ~ Sex)+
+                        labs(title = "Emb. Cherbourg") + ggnolegend,,
+                class_sex_queenstown = ggplot(tdfx[tdfx$Embarked == "Q", ]) + 
+                        geom_bar(aes(Survived, y = ..prop.., 
+                                     group = Pclass, fill = Pclass))+ 
+                        facet_grid(Pclass ~ Sex)+
+                        labs(title = "Emb. Queenstown") + ggnolegend
+                
+                
+        )
+})
+
+
+
+
+#+ survival-by4, fig.cap="Age by Survival  and Class", warning=FALSE
+
+# not interesting ??
+local({
+        nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
+ 
+        ggplot(tdf) + 
+                geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+                facet_grid(Pclass ~ Sex) +
+                labs(title= "All") + ggnolegend
+        
+        
+        ggplot(tdf[tdf$Survived == "Yes", ]) + 
+                geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+                facet_grid(Pclass ~ Sex) +
+                labs(title= "Survivors") + ggnolegend
+        
+        ggplot(tdf[tdf$Survived == "No", ]) + 
+                geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
+                facet_grid(Pclass ~ Sex) +
+                labs(title= "Non-Survivors") + ggnolegend
+        
+})
+
+
+
+
+
+#' * Class and Agestat, Agestat and sex
+
+#+ survival-by5, fig.cap="Survival by age status, Class and sex"
+
+agesex_class <- table(tdf$Agestat, tdf$Sex, tdf$Pclass)
+
+pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
+
+
+
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat) + 
+        labs(title = "Sex = All") +
+        theme(legend.position = "none")
+
+ggplot(tdf[tdf$Sex == "female" ,]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat) +
+        labs(title = "Sex ='female'") + 
+        theme(legend.position = "none")
+
+ggplot(tdf[tdf$Sex == "male" ,]) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Pclass, fill = Pclass))+ 
+        facet_grid(Pclass ~ Agestat)+
+        labs(title = "Sex = 'male'") + 
+        theme(legend.position = "none")
+
+
+
+
+#+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Pclass))+ 
+        facet_grid(Deck ~ Agestat)+
+        labs(title = "by Deck") # + theme(legend.position = "none")
+
+
+#+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"}
+
+ggplot(tdf) + 
+        geom_bar(aes(Survived, y = ..prop.., 
+                     group = Deck, fill = Sex))+ 
+        facet_grid(Deck ~ Agestat)+
+        labs(Title = "by Deck") # + theme(legend.position = "none")
+
+
+
+
+
+
