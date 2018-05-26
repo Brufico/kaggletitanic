@@ -255,8 +255,8 @@ p_age_by <- local({
 
 
 
-Deck
-----
+#' Deck
+#' ----
         
 #+ Deck, fig.cap= "Distribution of decks"
 p_deck = list(
@@ -303,10 +303,10 @@ p_embark <- local({
                 by_sex = ggplot(tdf) + 
                         geom_bar(aes(Embarked, y=..prop.., group=Sex)) +
                         facet_grid(.~Sex) + ggnolegend,
-                by_class = ggplot(tdfx) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass,  group=Pclass)) + 
+                by_class = ggplot(tdf) + geom_bar(aes(Embarked, y=..prop.., fill = Pclass,  group=Pclass)) + 
                         facet_grid(Pclass~.) +
                         ggnolegend,
-                by_sex_class = ggplot(tdfx) + 
+                by_sex_class = ggplot(tdf) + 
                         geom_bar(aes(Embarked, y=..prop.., 
                                      fill = Pclass, group=Pclass)) +
                         facet_grid(Pclass~Sex) + ggnolegend
@@ -317,7 +317,7 @@ if (outresults) p_embark
 
 
 #' Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major
-#' embarkation point (`r  100 * df["Rfreq", "S"]`% of the passengers). However,
+#' embarkation point (`r  100 * tb_embark["Rfreq", "S"]`% of the passengers). However,
 #' this is not as true for the first-class passengers, particularly for the
 #' women of the first-class : only about 50% of them embarked at
 #' Southampton, and about 50% embarked at Cherbourg
@@ -327,7 +327,7 @@ if (outresults) p_embark
 #' The Fare
 #' --------
         
-#+ fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"}
+#+ fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"
 
 p_fare <- local({
         # ncf <- nclass.FD(tdf$Fare) 
@@ -368,7 +368,7 @@ if (outresults) p_fare
 
 #' ### overall
 
-#+ survival, fig.cap="Overall survival"}
+#+ survival, fig.cap="Overall survival"
 tb_survived <- prop.table(table(tdf$Survived))
 
 if (outresults) pander(tb_survived, digits=2, 
@@ -381,7 +381,7 @@ if (outresults) p_survived
         
 #' ### By category
 
-#+ survival-by, fig.cap="Survival by sex or Passenger Class"}
+#+ survival-by, fig.cap="Survival by sex or Passenger Class"
 # by sex
 
 # tables
@@ -410,17 +410,17 @@ p_survived_by <- local({
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass)) + 
                         facet_grid(Pclass ~ Sex) + ggnolegend,
-                class_sex_south = ggplot(tdfx[tdfx$Embarked == "S", ]) + 
+                class_sex_south = ggplot(tdf[tdf$Embarked == "S", ]) + 
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass))+ 
                         facet_grid(Pclass ~ Sex)+
                         labs(title = "Emb. Southampton") + ggnolegend,
-                class_sex_cherbourg = ggplot(tdfx[tdfx$Embarked == "C", ]) + 
+                class_sex_cherbourg = ggplot(tdf[tdf$Embarked == "C", ]) + 
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass))+ 
                         facet_grid(Pclass ~ Sex)+
-                        labs(title = "Emb. Cherbourg") + ggnolegend,,
-                class_sex_queenstown = ggplot(tdfx[tdfx$Embarked == "Q", ]) + 
+                        labs(title = "Emb. Cherbourg") + ggnolegend,
+                class_sex_queenstown = ggplot(tdf[tdf$Embarked == "Q", ]) + 
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass))+ 
                         facet_grid(Pclass ~ Sex)+
@@ -461,16 +461,48 @@ local({
 
 
 
-#' * Class and Agestat, Agestat and sex
-
-#+ survival-by5, fig.cap="Survival by age status, Class and sex"
-
-agesex_class <- table(tdf$Agestat, tdf$Sex, tdf$Pclass)
-
-pander(agesex_class, caption = "Distribution of age-status vs sex and Pclass" )
+#' * Survival, Class and Agestat +  sex
 
 
+tb_survived_by_class_sex_age <-  local({
+        # flat table
+        agesex_class_f <- ftable(tdf$Pclass,tdf$Sex,tdf$Agestat, tdf$Survived)
+        modifytable <- function(ft) {
+                rtot <- rowSums(ft, 2)
+                ft <- round(prop.table(ft, 1), 2) * 100
+                ft[,1] <- rtot
+                attr(ft, which = "col.vars") <- list(c("Number", "% Survived"))
+                ft
+        }
+        
+        agesex_class_f_p <- modifytable(agesex_class_f_p)
+        
+        # # compute totals
+        # rtot <- rowSums(agesex_class_f, 2)
+        # # percentage table
+        # agesex_class_f_p <- round(prop.table(agesex_class_f, 1), 2) * 100
+        # # substitute % No with the totals
+        # agesex_class_f_p[,1] <- rtot
+        # # change column names
+        # attr(agesex_class_f_p, which = "col.vars") <- list(c("Number", "% Survived"))
+        
+        agesex_class_f_p
+        # to <- pander(agesex_class_f_p)
+        age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
+        age_class_f <- modifytable(age_class_f)
+        pander(age_class_f)
+})
 
+
+#' 
+#' <br>
+#' 
+
+if (outresults) pander(agesex_class_f_p, caption = "Survival rate vs Pclass , sex and Age-status" )
+
+#' 
+#' <br>
+#' 
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
@@ -496,7 +528,7 @@ ggplot(tdf[tdf$Sex == "male" ,]) +
 
 
 
-#+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"}
+#+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
@@ -505,7 +537,7 @@ ggplot(tdf) +
         labs(title = "by Deck") # + theme(legend.position = "none")
 
 
-#+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"}
+#+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"
 
 ggplot(tdf) + 
         geom_bar(aes(Survived, y = ..prop.., 
