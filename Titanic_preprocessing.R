@@ -27,6 +27,8 @@ numna_before <- sapply(tdf,
 # Text --> Factors
 # ------------------
 
+# preserve binary survived
+tdf$Survive_bin <- tdf$Survived
 # make factor Survived
 tdf$Survived <- local({
         sf <- factor(tdf$Survived, labels=c("No", "Yes"))

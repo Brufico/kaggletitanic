@@ -20,7 +20,7 @@ bwtheme <- TRUE         # use bw theme
 specialpalette <- FALSE # use the special palette for color-blinds
 showarning <- FALSE     # show the warnings
 datmis <- "Ukn"         # Value to replace the NA's with 
-outresults <- TRUE      # Output the results (printing, etc)
+outresults <- FALSE      # Output the results (printing, etc)
 
 
 
@@ -464,7 +464,10 @@ local({
 #' * Survival, Class and Agestat +  sex
 
 
-tb_survived_by_class_sex_age <-  local({
+# tb_survived_by_class_sex_age 
+
+#+ panderthings, result = "asis"
+agesex_class_f_p <-  local({
         # flat table
         agesex_class_f <- ftable(tdf$Pclass,tdf$Sex,tdf$Agestat, tdf$Survived)
         modifytable <- function(ft) {
@@ -475,7 +478,10 @@ tb_survived_by_class_sex_age <-  local({
                 ft
         }
         
-        agesex_class_f_p <- modifytable(agesex_class_f_p)
+        agesex_class_f_p <- modifytable(agesex_class_f)
+        agesex_class_f_p
+        
+        # sum(agesex_class_f_p[,1])
         
         # # compute totals
         # rtot <- rowSums(agesex_class_f, 2)
@@ -486,65 +492,106 @@ tb_survived_by_class_sex_age <-  local({
         # # change column names
         # attr(agesex_class_f_p, which = "col.vars") <- list(c("Number", "% Survived"))
         
-        agesex_class_f_p
-        # to <- pander(agesex_class_f_p)
-        age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
-        age_class_f <- modifytable(age_class_f)
-        pander(age_class_f)
+        # agesex_class_f_p
+        # # to <- pander(agesex_class_f_p)
+        # age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
+        # age_class_f <- modifytable(age_class_f)
+        # pander(age_class_f)
 })
 
+# treat problem
+#
 
+print("First table, raw ")
+agesex_class_f_p
+
+
+#' pander
+#' 
+#+ thing, results='asis'
+
+panderOptions("table.style", 'rmarkdown')
+pander(agesex_class_f_p, 
+              caption = "Survival rate vs Pclass , sex and Age-status" )
+
+
+
+panderOptions("table.style", 'rmarkdown')
+
+tbtext <- pander_return(agesex_class_f_p, 
+                        caption = "Survival rate vs Pclass , sex and Age-status" )
+
+#+ thing2, results='asis'
+cat(tbtext)
+cat(paste0(tbtext, "\n"))
+
+matchpos = c(0,0,0)
+mst <- tbtext[2]
+for (i in seq_along(matchpos)[-1]) {
+        pos <- regexpr(" ", mst)
+        matchpos[i] = pos
+        mst=substring(mst, first = pos + 1)
+}
+matchpos <- cumsum(matchpos) + 1
+rev(matchpos)
+mst <- tbtext[3]
+for (i in rev(matchpos)) {
+        substr(mst, i, i+1) <- "\"\""
+}
+# mst
+
+tbtext[3] <- mst
+
+cat(paste0(tbtext[-c(4,5)], "\n"))
+
+# if (outresults) 
 #' 
 #' <br>
 #' 
 
-if (outresults) pander(agesex_class_f_p, caption = "Survival rate vs Pclass , sex and Age-status" )
 
-#' 
-#' <br>
-#' 
-
-ggplot(tdf) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Pclass ~ Agestat) + 
-        labs(title = "Sex = All") +
-        theme(legend.position = "none")
-
-ggplot(tdf[tdf$Sex == "female" ,]) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Pclass ~ Agestat) +
-        labs(title = "Sex ='female'") + 
-        theme(legend.position = "none")
-
-ggplot(tdf[tdf$Sex == "male" ,]) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Pclass, fill = Pclass))+ 
-        facet_grid(Pclass ~ Agestat)+
-        labs(title = "Sex = 'male'") + 
-        theme(legend.position = "none")
-
-
-
-
-#+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"
-
-ggplot(tdf) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Deck, fill = Pclass))+ 
-        facet_grid(Deck ~ Agestat)+
-        labs(title = "by Deck") # + theme(legend.position = "none")
-
-
-#+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"
-
-ggplot(tdf) + 
-        geom_bar(aes(Survived, y = ..prop.., 
-                     group = Deck, fill = Sex))+ 
-        facet_grid(Deck ~ Agestat)+
-        labs(Title = "by Deck") # + theme(legend.position = "none")
-
+# #---------------------------------------------------------------------------
+# ggplot(tdf) + 
+#         geom_bar(aes(Survived, y = ..prop.., 
+#                      group = Pclass, fill = Pclass))+ 
+#         facet_grid(Pclass ~ Agestat) + 
+#         labs(title = "Sex = All") +
+#         theme(legend.position = "none")
+# 
+# ggplot(tdf[tdf$Sex == "female" ,]) + 
+#         geom_bar(aes(Survived, y = ..prop.., 
+#                      group = Pclass, fill = Pclass))+ 
+#         facet_grid(Pclass ~ Agestat) +
+#         labs(title = "Sex ='female'") + 
+#         theme(legend.position = "none")
+# 
+# ggplot(tdf[tdf$Sex == "male" ,]) + 
+#         geom_bar(aes(Survived, y = ..prop.., 
+#                      group = Pclass, fill = Pclass))+ 
+#         facet_grid(Pclass ~ Agestat)+
+#         labs(title = "Sex = 'male'") + 
+#         theme(legend.position = "none")
+# 
+# 
+# 
+# 
+# #+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"
+# 
+# ggplot(tdf) + 
+#         geom_bar(aes(Survived, y = ..prop.., 
+#                      group = Deck, fill = Pclass))+ 
+#         facet_grid(Deck ~ Agestat)+
+#         labs(title = "by Deck") # + theme(legend.position = "none")
+# 
+# 
+# #+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"
+# 
+# ggplot(tdf) + 
+#         geom_bar(aes(Survived, y = ..prop.., 
+#                      group = Deck, fill = Sex))+ 
+#         facet_grid(Deck ~ Agestat)+
+#         labs(Title = "by Deck") # + theme(legend.position = "none")
+# 
 
 
 
