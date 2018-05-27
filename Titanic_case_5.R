@@ -20,7 +20,7 @@ bwtheme <- TRUE         # use bw theme
 specialpalette <- FALSE # use the special palette for color-blinds
 showarning <- FALSE     # show the warnings
 datmis <- "Ukn"         # Value to replace the NA's with 
-outresults <- FALSE      # Output the results (printing, etc)
+outresults <- TRUE      # Output the results (printing, etc)
 
 
 
@@ -82,7 +82,7 @@ if (outresults) pander(summary(tdf), caption = tabcap("Data summaries"))
 #' Data modifications {#modifs}
 #' ----------------------------
 #'                 
-#'                 * Make `Survived` , `Pclass` and `Embark` factors, 
+#'         * Make `Survived` , `Pclass` and `Embark` factors, 
 #'         * Create `Famly` = `SibSp + Parch` 
 #'         * Create  `Sex.Pclass`
 #'         * Substitute missing values with `r datmis` in variable `Embarked`
@@ -178,7 +178,10 @@ p_agestat_by <- list(
                 theme(axis.text.x = element_text(angle = 90))
 )
 
-if (outresults) local({xxx <- sapply(p_agestat_by, print)} ) # a revoir
+if (outresults) local({
+        xxx <- sapply(p_agestat_by, print)
+        ""
+} ) # a revoir
 
 
 
@@ -227,6 +230,7 @@ if (outresults) p_pclass
 
 #' ### Passengers deographics by class
 
+#+ p_age_by, fig.cap = "Passengers deographics characteristics by class"
 p_age_by <- local({
         nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
         
@@ -253,6 +257,10 @@ p_age_by <- local({
         )
 })
 
+if (outresults){ 
+        p_age_by 
+}
+
 
 
 #' Deck
@@ -269,7 +277,9 @@ p_deck = list(
                 facet_grid(Pclass ~ .) + ggnolegend
 )
 
-
+if (outresults){ 
+        p_deck
+}
 
 #' Figure `r .ref("fig:", "Deck") shows a very partial distribution of decks:
 #' the deck of nearly 80% of the passengers is unknown. However, the third graph
@@ -277,8 +287,10 @@ p_deck = list(
 
 
 
-#' Embarkation point
-#' ----
+#' 
+#' Embarkation port
+#' ------------------
+#' 
 
 # table
 tdf$Embarked <- factor(tdf$Embarked, levels = c("S", "C", "Q"))
@@ -313,7 +325,10 @@ p_embark <- local({
         )
 })
 
-if (outresults) p_embark
+if (outresults){ 
+        pander(tb_embark)
+        p_embark
+}
 
 
 #' Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major
@@ -324,10 +339,21 @@ if (outresults) p_embark
 
 
 
+#' 
 #' The Fare
 #' --------
+#' 
         
 #+ fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"
+
+t_fare <- local( {
+        fare_1 <-  summary( tdf[ tdf$Pclass == 1, "Fare"] )
+        fare_2  <-  summary( tdf[ tdf$Pclass == 2, "Fare"] )
+        fare_3  <-  summary( tdf[ tdf$Pclass == 3, "Fare"] )
+        rbind (t(fare_1), 
+               t(fare_2),
+               t(fare_2))
+})
 
 p_fare <- local({
         # ncf <- nclass.FD(tdf$Fare) 
@@ -340,7 +366,7 @@ p_fare <- local({
                 class_facet_hist = ggplot(tdf) + 
                         geom_histogram(aes(Fare, y=..density.., 
                                            fill=Pclass), bins = ncf) +
-                        facet_grid(Pclass ~.),
+                        facet_grid(Pclass ~.) + ggnolegend,
                 class_box <- ggplot(tdf) + 
                         geom_boxplot(aes(Pclass,Fare, 
                                          fill = Pclass), color = "grey50") + 
@@ -378,7 +404,9 @@ p_survived <- ggplot(tdf) + geom_bar(aes(Survived, y = ..prop.., group = 1))
 
 
 if (outresults) p_survived
-        
+
+
+
 #' ### By category
 
 #+ survival-by, fig.cap="Survival by sex or Passenger Class"
@@ -430,34 +458,39 @@ p_survived_by <- local({
         )
 })
 
-
+if (outresults) {p_survived_by}
 
 
 #+ survival-by4, fig.cap="Age by Survival  and Class", warning=FALSE
 
 # not interesting ??
-local({
+p_age_survived <- local({
         nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
  
-        ggplot(tdf) + 
+        age_all <- ggplot(tdf) + 
                 geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
                 facet_grid(Pclass ~ Sex) +
                 labs(title= "All") + ggnolegend
         
         
-        ggplot(tdf[tdf$Survived == "Yes", ]) + 
+        age_survivors <- ggplot(tdf[tdf$Survived == "Yes", ]) + 
                 geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
                 facet_grid(Pclass ~ Sex) +
                 labs(title= "Survivors") + ggnolegend
         
-        ggplot(tdf[tdf$Survived == "No", ]) + 
+        age_non_survivors <- ggplot(tdf[tdf$Survived == "No", ]) + 
                 geom_histogram(aes(Age, y= ..density.., fill = Pclass), bins = nc) +
                 facet_grid(Pclass ~ Sex) +
                 labs(title= "Non-Survivors") + ggnolegend
+        # return
+        list(age_all = age_all, 
+             age_survivors = age_survivors,
+             age_non_survivors = age_non_survivors
+             )
         
 })
 
-
+if (outresults) {p_age_survived}
 
 
 
@@ -467,131 +500,70 @@ local({
 # tb_survived_by_class_sex_age 
 
 #+ panderthings, result = "asis"
-agesex_class_f_p <-  local({
-        # flat table
-        agesex_class_f <- ftable(tdf$Pclass,tdf$Sex,tdf$Agestat, tdf$Survived)
+survived_age_sex_class_f_p <-  local({
+        # utility to reorganize these flat tables
         modifytable <- function(ft) {
-                rtot <- rowSums(ft, 2)
-                ft <- round(prop.table(ft, 1), 2) * 100
+                rtot <- rowSums(ft, 2) # compute row totals
+                ft <- round(prop.table(ft, 1), 2) * 100 # compute %survived
                 ft[,1] <- rtot
-                attr(ft, which = "col.vars") <- list(c("Number", "% Survived"))
+                attr(ft, which = "col.vars") <- list(c("Number", "% Survived")) #substitute columns
                 ft
         }
-        
+        # flat table suvived class * sex * agestat
+        agesex_class_f <- ftable(tdf$Pclass,tdf$Sex,tdf$Agestat, tdf$Survived)
         agesex_class_f_p <- modifytable(agesex_class_f)
-        agesex_class_f_p
         
-        # sum(agesex_class_f_p[,1])
+        # flat table suvived class * agestat (no sex)
+        age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
+        age_class_f_p <- modifytable(age_class_f)
         
-        # # compute totals
-        # rtot <- rowSums(agesex_class_f, 2)
-        # # percentage table
-        # agesex_class_f_p <- round(prop.table(agesex_class_f, 1), 2) * 100
-        # # substitute % No with the totals
-        # agesex_class_f_p[,1] <- rtot
-        # # change column names
-        # attr(agesex_class_f_p, which = "col.vars") <- list(c("Number", "% Survived"))
-        
-        # agesex_class_f_p
-        # # to <- pander(agesex_class_f_p)
-        # age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
-        # age_class_f <- modifytable(age_class_f)
-        # pander(age_class_f)
+        list(surv_class_sex_age = agesex_class_f_p,
+             surv_class_age = age_class_f_p)
 })
 
-# treat problem
-#
-
-print("First table, raw ")
-agesex_class_f_p
-
-
-#' pander
-#' 
-#+ thing, results='asis'
-
-panderOptions("table.style", 'rmarkdown')
-pander(agesex_class_f_p, 
-              caption = "Survival rate vs Pclass , sex and Age-status" )
-
-
-
-panderOptions("table.style", 'rmarkdown')
-
-tbtext <- pander_return(agesex_class_f_p, 
-                        caption = "Survival rate vs Pclass , sex and Age-status" )
-
-#+ thing2, results='asis'
-cat(tbtext)
-cat(paste0(tbtext, "\n"))
-
-matchpos = c(0,0,0)
-mst <- tbtext[2]
-for (i in seq_along(matchpos)[-1]) {
-        pos <- regexpr(" ", mst)
-        matchpos[i] = pos
-        mst=substring(mst, first = pos + 1)
+if (outresults) {pander(survived_age_sex_class_f_p, digits=2, 
+                        caption = "Survival by  Class, Sex , Age ")
 }
-matchpos <- cumsum(matchpos) + 1
-rev(matchpos)
-mst <- tbtext[3]
-for (i in rev(matchpos)) {
-        substr(mst, i, i+1) <- "\"\""
+
+
+# plots survival-by
+
+#+ plots_survival_by, w = w.11, fig.asp = 1.5,
+pl_survived_by <-  local({
+        list(
+                class_age_sex_all = ggplot(tdf) +
+                        geom_bar(aes(Survived, y = ..prop..,
+                                     group = Pclass, fill = Pclass))+
+                        facet_grid(Pclass ~ Agestat) +
+                        labs(title = "Sex = All") + ggnolegend , 
+                class_age_sex_female = ggplot(tdf[tdf$Sex == "female" ,]) +
+                        geom_bar(aes(Survived, y = ..prop..,
+                                     group = Pclass, fill = Pclass))+
+                        facet_grid(Pclass ~ Agestat) +
+                        labs(title = "Sex ='female'") + ggnolegend,
+                class_age_sex_male = ggplot(tdf[tdf$Sex == "male" ,]) +
+                        geom_bar(aes(Survived, y = ..prop..,
+                                     group = Pclass, fill = Pclass))+
+                        facet_grid(Pclass ~ Agestat) +
+                        labs(title = "Sex = 'male'") + ggnolegend,
+                Deck_age_class = ggplot(tdf) +
+                        geom_bar(aes(Survived, y = ..prop..,
+                                     group = Deck, fill = Pclass)) +
+                        facet_grid(Deck ~ Agestat) +
+                        labs(title = "by Deck") + ggnolegend,
+                Deck_age_sex = ggplot(tdf) +
+                        geom_bar(aes(Survived, y = ..prop..,
+                                     group = Deck, fill = Sex)) +
+                        facet_grid(Deck ~ Agestat)+
+                        labs(Title = "by Deck") + ggnolegend
+        )
+})
+
+if (outresults) {
+        pl_survived_by
 }
-# mst
-
-tbtext[3] <- mst
-
-cat(paste0(tbtext[-c(4,5)], "\n"))
-
-# if (outresults) 
-#' 
-#' <br>
-#' 
 
 
-# #---------------------------------------------------------------------------
-# ggplot(tdf) + 
-#         geom_bar(aes(Survived, y = ..prop.., 
-#                      group = Pclass, fill = Pclass))+ 
-#         facet_grid(Pclass ~ Agestat) + 
-#         labs(title = "Sex = All") +
-#         theme(legend.position = "none")
-# 
-# ggplot(tdf[tdf$Sex == "female" ,]) + 
-#         geom_bar(aes(Survived, y = ..prop.., 
-#                      group = Pclass, fill = Pclass))+ 
-#         facet_grid(Pclass ~ Agestat) +
-#         labs(title = "Sex ='female'") + 
-#         theme(legend.position = "none")
-# 
-# ggplot(tdf[tdf$Sex == "male" ,]) + 
-#         geom_bar(aes(Survived, y = ..prop.., 
-#                      group = Pclass, fill = Pclass))+ 
-#         facet_grid(Pclass ~ Agestat)+
-#         labs(title = "Sex = 'male'") + 
-#         theme(legend.position = "none")
-# 
-# 
-# 
-# 
-# #+  survival_by6, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, age and class"
-# 
-# ggplot(tdf) + 
-#         geom_bar(aes(Survived, y = ..prop.., 
-#                      group = Deck, fill = Pclass))+ 
-#         facet_grid(Deck ~ Agestat)+
-#         labs(title = "by Deck") # + theme(legend.position = "none")
-# 
-# 
-# #+ survival_by7, w = w.11, fig.asp = 1.5, fig.cap="Survival by Deck, Age and Sex"
-# 
-# ggplot(tdf) + 
-#         geom_bar(aes(Survived, y = ..prop.., 
-#                      group = Deck, fill = Sex))+ 
-#         facet_grid(Deck ~ Agestat)+
-#         labs(Title = "by Deck") # + theme(legend.position = "none")
-# 
 
 
 
