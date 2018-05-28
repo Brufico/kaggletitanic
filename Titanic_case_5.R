@@ -21,8 +21,7 @@ specialpalette <- FALSE # use the special palette for color-blinds
 showarning <- FALSE     # show the warnings
 datmis <- "Ukn"         # Value to replace the NA's with 
 outresults <- TRUE      # Output the results (printing, etc)
-
-
+saveresults <- TRUE     # save the results in Rda file for reuse in report
 
 #+libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'
 ## Required packages (install before running): "caret", "ggplot2", pander
@@ -99,6 +98,21 @@ source("Titanic_preprocessing.R")
 # missing values before modifications
 if (outresults) pander(t(numna_before), caption = "Before modifications, Number of missing values")
 
+
+#' 
+#' Saving parameters {#saveparams}
+#' ==================
+#' 
+#' Optionnally, the results of the analysis may be saved
+#' 
+#+ savechunk
+
+savefname <- "analysis_results.rda"
+# save in the data dir
+savedir <- datadir
+
+
+
 #' 
 #' Data Analysis {#analysis}
 #' ==================
@@ -132,7 +146,7 @@ if (outresults) p_sex
 #' * Age
 #'
 #+ age, warning=FALSE, fig.cap="Age"  
-sum_age <- summary(tdf$Age)
+tb_age <- summary(tdf$Age)
 if (outresults) pander(sum_age)
 p_age <- local({
         nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
@@ -194,11 +208,14 @@ if (outresults) local({
 p_famly <- list(
         sibsp = ggplot(tdf) + geom_bar(aes(SibSp)),
         parch = ggplot(tdf) + geom_bar(aes(Parch)),
-        famly = ggplot(tdf) + geom_bar(aes(Famly))
+        famly = ggplot(tdf) + 
+                geom_bar(aes(Famly, y = ..prop..), width = .5) +
+                labs(x = "Family members on Board")
 )
 
 
-if (outresults) for (i in seq_along(p_famly)) p_famly[[i]]
+if (outresults) p_famly$famly
+
                 
 
 #' 
@@ -245,6 +262,11 @@ p_age_by <- local({
                         geom_histogram(aes(y=..density..,fill=Pclass),bins=nc) +
                         facet_grid(Pclass ~ .) +
                         ggnolegend,
+                agebox = ggplot(tdf) + 
+                        geom_boxplot(aes(Pclass, Age, 
+                                         fill = Pclass), color = "grey50") + 
+                        scale_x_discrete(limits = rev(levels(tdf$Pclass))) +
+                        coord_flip() + ggnolegend,
                 famly = ggplot(tdf) + 
                         geom_bar(aes(Famly, y = ..prop.., fill=Pclass)) +
                         facet_grid(Pclass ~ .)+ 
@@ -299,10 +321,18 @@ tb_embark <- local({
         temb <- table(tdf$Embarked)
         # proportion table
         ptemb <- prop.table(temb)
-        df <- rbind(frequency = temb , Rfreq = ptemb) 
+        df <- rbind(frequency = temb , Rel.freq. = ptemb)
+        
+        ft <- round(prop.table(table(tdf$Pclass, tdf$Embarked), margin = 1),2)
+        ft2 <- round(prop.table(ftable(tdf$Pclass, tdf$Sex, tdf$Embarked), margin = 1),2)
+        list(df = df, ft = ft, ft2 = ft2)
 })
 
-if (outresults) pander(tb_embark, digits=2, caption = "Embarkation port")
+if (outresults) {
+        kable(tb_embark$df, digits=2, caption = "Embarkation port")
+        kable(tb_embark$ft, digits=2, row.names = TRUE, caption = "Embarkation port by class")
+        pander(tb_embark$ft2, digits=2, caption = "Embarkation port by class and sex")
+        }
 
 
 # na_emb <- sum(is.na(tdf$Embarked)) #  2 passengers have unknown embarkation port
@@ -331,11 +361,12 @@ if (outresults){
 }
 
 
+
 #' Figure `r .ref("fig:", "Embarked")` shows that Southampton was the major
-#' embarkation point (`r  100 * tb_embark["Rfreq", "S"]`% of the passengers). However,
+#' embarkation point (`r  100 * tb_embark$df[2, 1]`% of the passengers). However,
 #' this is not as true for the first-class passengers, particularly for the
-#' women of the first-class : only about 50% of them embarked at
-#' Southampton, and about 50% embarked at Cherbourg
+#' women of the first-class : only `r 100 * tb_embark$ft2[1, 1]`% of them embarked at
+#' Southampton, and `r 100 * tb_embark$ft2[1, 2]`% embarked at Cherbourg
 
 
 
@@ -346,13 +377,15 @@ if (outresults){
         
 #+ fare, w=w.12,a=a.11, fig.cap="Fare by class and Sex"
 
-t_fare <- local( {
+tb_fare <- local( {
         fare_1 <-  summary( tdf[ tdf$Pclass == 1, "Fare"] )
         fare_2  <-  summary( tdf[ tdf$Pclass == 2, "Fare"] )
         fare_3  <-  summary( tdf[ tdf$Pclass == 3, "Fare"] )
-        rbind (t(fare_1), 
+        tab <- rbind (t(fare_1), 
                t(fare_2),
-               t(fare_2))
+               t(fare_3))
+        row.names(tab) <- c(1, 2, 3)
+        tab
 })
 
 p_fare <- local({
@@ -380,12 +413,15 @@ p_fare <- local({
                         facet_grid(Sex ~.) 
         )
 })
+# t_fare[1,4]
 
-if (outresults) p_fare
+if (outresults) {
+        kable(tb_fare, row.names = TRUE)
+        p_fare
+}
 
 
 #'  
-
 #' survival
 #' ============
 #' 
@@ -564,8 +600,39 @@ if (outresults) {
 }
 
 
+#' 
+#' Saving results {#saveresults}
+#' ==================
+#' 
+#' Optionnally, the results of the analysis may be saved
+#' 
+
+#+ savechunk
+
+# temporary (testing)
+savefname <- "analysis_results.rda"
+# save in the data dir
+savedir <- datadir
 
 
+# example
+obja <- 1:20
+objb <- letters[obja]
+objc <- 1 / obja
 
+obja
+objb
+objc
 
+save(list = c("obja","objb","objc" ), file = file.path(savedir, savefname))
 
+remove(list = c("obja", "objb", "objc" ))
+obja
+objb
+objc
+
+load(file = file.path(savedir, savefname))
+
+obja
+objb
+objc
