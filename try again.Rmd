@@ -1,0 +1,122 @@
+---
+title: "try again"
+author: "Bruno Fischer Colonimos"
+date: "27 mai 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+table:
+
+
+Class  Sex    AgeStat.   Number    % Survived 
+---- ------- --------   --------  ------------
+ 1   female   adult       183         54     
+              child        1          0      
+              teen        107         93     
+               Ukn        101         99     
+      male    adult       134         28     
+              child       103         97     
+              teen         52         96     
+               Ukn         45         56
+_____________________________________________
+ 2   female   adult       151         60     
+              child       108         93     
+              teen        105         95     
+               Ukn        102         98     
+      male    adult        91         8      
+              child       109         92     
+              teen         6          0      
+               Ukn         31         71
+_____________________________________________
+ 3   female   adult       117         39     
+              child        71         68     
+              teen         70         76     
+               Ukn         91         64     
+      male    adult       215         6      
+              child        67         57     
+              teen         34         24     
+               Ukn         98         8      
+-------------------------------------------
+
+
+thats it
+
+
+--- ------- -- -------- ------------
+                Number   % Survived 
+
+                                    
+
+ 1   adult       182         65     
+
+     child        4          75     
+
+     teen         9          89     
+
+      Ukn         21         29     
+
+ 2   adult       145         42     
+
+     child        17        100     
+
+     teen         11         45     
+
+      Ukn         11         36     
+
+ 3   adult       273         22     
+
+     child        52         42     
+
+     teen         43         26     
+
+      Ukn        123         21     
+--- ------- -- -------- ------------
+
+
+
+# tries with pander
+
+```{r}
+library(pander)
+daf <- list(
+        df1 =  data.frame (x = runif(10), y = rpois(10, lambda = 5)),
+        df2 = data.frame( a = 1:5, b = rep("xx", 5), c = 11:15)   
+)
+
+pander(daf)
+
+```
+# unrelated tries
+```{r}
+100 * round(tb_sex[2,2], 2)
+
+round(12 * tb_age["Min."],0)
+
+sum(is.na(tdf$Age))
+nrow(tdf)
+100 * round(sum(is.na(tdf$Age))/nrow(tdf), 2)
+
+sum(tdf$Cabin == "")
+nrow(tdf)
+100 * round(sum(tdf$Cabin == "")/nrow(tdf), 2)
+
+100 * tb_age[7] / nrow(tdf)
+
+tb_age[7] / nrow(tdf)
+
+tb_agestat$all
+pander(tb_agestat$known, digits = 2)
+
+round(tb_agestat$known[2,2],2) * 100
+
+names(p_agestat_by)
+
+as.percent(0.7459)
+
+```
+
+
+
+

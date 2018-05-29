@@ -1,0 +1,253 @@
+---
+title: 'Etude de cas *Titanic*'
+subtitle: "Rapport final"
+author:  "Bruno Fischer Colonimos"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+# header-includes: \usepackage{graphicx} # for unmodded template
+header-includes: \usepackage{float} # for fig.pos = 'H'
+fontsize: 12pt
+urlcolor: "blue"   ## external
+linkcolor: "red" ## internal
+documentclass: article
+classoption: a4paper
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
+footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
+output:
+  # pdf_document:
+  #   # template: test_latex_temp
+  #   template: latex_temp2.latex
+  #   highlight: monochrome
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+  #   # keep_tex: true
+  #   fig_caption: yes
+  #   keep_tex: yes
+    
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+---
+
+
+
+<!-- Some Inline HTML (CSS) , formatting tables -->
+
+<style>
+
+table {
+    width: 100%;
+    border-top-style: solid;
+    border-top-width: medium;
+    border-top-color: initial;
+    border-bottom-style: solid;
+    border-bottom-width: medium;
+    border-bottom-color: initial;
+}
+
+</style>
+
+<!-- End Inline HTML -->
+
+
+
+
+```{r setup0, include=FALSE}
+
+# Preliminary code
+# ================
+## Libraries and auxiliary code (install before running)
+
+### code config parameters
+
+# adjust Gggplot2 theme and color palette
+bwtheme <- TRUE
+specialpalette <- FALSE
+showarning <- FALSE
+datmis <- "Ukn"
+
+
+### Required packages (install before running)
+# libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+library(knitr)
+library(pander)
+library(caret)
+library(ggplot2)
+library(dplyr)
+library(grid)
+library(gridExtra)
+
+# Source preparatory code "preparation.R"
+# ========================
+
+## code config parameters
+# adjust (?) Gggplot2 theme and color palette
+bwtheme <- TRUE         # use bw theme
+specialpalette <- FALSE # use the special palette for color-blinds
+showarning <- FALSE     # show the warnings
+datmis <- "Ukn"         # Value to replace the NA's with 
+# Execution
+echo_code <- TRUE       # Echo the code chunks
+outresults <- TRUE      # Output the results (printing, etc)
+saveresults <- TRUE     # save the results in Rda file for reuse in report
+
+
+source("preparation.R")
+
+# Set aliases
+
+knitr::set_alias(w = "fig.width", a = "fig.asp")
+
+```
+
+```{r setup, echo = FALSE}
+# setup chunk : default options
+knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
+```
+
+```{r morecode}
+displaygraph <- function(one.graph,
+                         windevice = NULL,
+                         width = 6,
+                         height = 5 ) {
+        if (is.null(windevice)) {
+                grid.newpage()
+                grid.draw(one.graph)
+        } else {
+                windows(width = width, height = height)
+                grid.newpage()
+                grid.draw(one.graph)
+                Sys.sleep(defsleep)
+                dev.off()
+        }
+}
+
+# show proportion as %
+as.percent <- function(prop, digits = 0, suffix = "%", sep = " ") 
+        paste(100 * round(prop, digits = digits + 2), 
+              suffix, sep = sep)
+
+```
+
+
+
+
+
+```{r data}
+# get the analyzed data
+savedir <- "data"
+savefname <- "analysis_results.rda"
+load(file=file.path(savedir, savefname))
+```
+
+-------------------------------------------------------------------------------------------------------
+
+Synthèse
+========
+
+-------------------------------------------------------------------------------------------------------
+
+Le naufrage du Titanic
+=======================
+
+## Le Désastre. Objectifs d'analyse
+
+Le naufrage du paquebot Titanic au cours de son voyage inaugural, le 14 avril 1912, a laissé une trace durable dans la mémoire collective. Malgré deux enquêtes indépendantes, des interrogations subsistent.
+
+L'objectif de ce travail est, à partir des données publiées par _kaggle_, de décrire les passagers du voyage inaugural au cours d'une analyse exploratoire des données  et de rendre compte des différences statistiques observées, en ce qui concerne leur survie.
+
+## Les données
+
+Le site _Kaggle_ a publié un ensemble de données concernant `r nrow(tdf)` passagers. Il s'agit donc d'un échantillon (de grande taille), puique le vaisseau a embarqué  1316 passagers. La méthode de sélection de cet échantillon n'est pas connue.\ 
+Les données sont dans l'ensemble très complètes, les deux exceptions les plus notables étant l'âge (`r tb_age[7]` données manquantes soit `r as.percent(100 * tb_age[7] / nrow(tdf))`) et le numéro de cabine (`r sum(tdf$Cabin == "")` manquants soit `r as.percent(sum(tdf$Cabin == "")/nrow(tdf))`) 
+
+## Les passagers
+
+### Age, sexe, groupe familial
+Dans l'échantillon de passagers observé, il y a 891 passagers, dont `r as.percent(tb_sex[2,2])` d'hommes. Tous les âges sont représentés (de `r round(12 * tb_age["Min."],0)` mois à  `r tb_age["Max."]` ans) et l'âge moyen est de `r tb_age["Mean"]` ans, l'âge le plus fréquent étant aux alentours de 20 ans, ce pic étant particulièrement marqué chez les hommes. (Remarque: de nombreux ages sont inconnus - cf. _supra_)
+
+Le _"statut lié à l'age"_ (enfants / adultes) jouera un rôle important dans la survie des passagers (cf. _infra_). En considérant les 3 classes d'âge suivantes
+
+* enfants (13 ans ou moins  codé "child"),
+* adolescents (14 à 19 ans, codé "teen"),
+* Adultes (20 ans et plus),
+
+on trouve que les `r tb_agestat$known[1,2]` enfants représentent `r round(tb_agestat$known[2,2],2) * 100`% des passagers dont l'âge est connu, et les adolescents `r round(tb_agestat$known[2,3],2) * 100`%
+
+```{r, fig.width=w.34, fig.asp= a.12}
+# p_agestat_by$none + labs(x = "statut lié à l'âge")
+# 
+# displaygraph(p_age_sex)
+
+local({
+        gr <- arrangeGrob(p_age_sex, p_agestat_by$none + labs(x = "statut lié à l'âge"), 
+                          ncol = 2, top = textGrob("Age") )
+        displaygraph(gr)
+})
+
+
+```
+
+
+Ces passagers voyagent le plus souvent seuls, mais peuvent aussi être accompagnés d'un "groupe familial" d'une taille allant jusqu'à 10 autres passagers^[Certains passagers de première classe voyagent également avec une partie de leurs domestiques].
+
+### Classes de tarif
+
+Les passagers se répartissent en 3 classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r tb_pclass[2,3]` )
+
+
+## La survie des passagers
+
+## conclusion
+
+---------------------------------------------------------------------------------------------------------
+
+# Annexe
+
+## Les données
+
+## Résultats statistiques bruts
+
+### Les Passagers
+
+
+
+####  Sexe
+
+```{r anx_sex}
+pander(tb_sex)
+
+displaygraph(p_sex)
+
+```
+
+#### Age, Statut lié à l'âge (Age, Agestatus)
+
+```{r anx_age}
+pander(tb_age)
+p_age
+p_age_sex
+p_agestat_by
+
+arrangeGrob()
+```
+
+#### Groupe familial
+
+Remarque : la variable Famly a été dréée par l'addition des variables Sibsp et Parch
+
+```{r anx_famly, fig.show = "hold"}
+p_famly$famly
+```
+
+#### Passenger Class (Pclass)
+
+```{r anx_pclass}
+
+
+```
+
+

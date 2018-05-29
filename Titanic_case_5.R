@@ -20,8 +20,11 @@ bwtheme <- TRUE         # use bw theme
 specialpalette <- FALSE # use the special palette for color-blinds
 showarning <- FALSE     # show the warnings
 datmis <- "Ukn"         # Value to replace the NA's with 
-outresults <- TRUE      # Output the results (printing, etc)
+# Execution
+echo_code <- TRUE       # Echo the code chunks
+outresults <- FALSE      # Output the results (printing, etc)
 saveresults <- TRUE     # save the results in Rda file for reuse in report
+
 
 #+libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'
 ## Required packages (install before running): "caret", "ggplot2", pander
@@ -43,7 +46,7 @@ knitr::set_alias(w = "fig.width", a = "fig.asp")
 
 #+ setup, echo = FALSE
 # setup chunk : default options
-knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
+knitr::opts_chunk$set(echo = echo_code, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
 
 
 
@@ -105,7 +108,7 @@ if (outresults) pander(t(numna_before), caption = "Before modifications, Number 
 #' 
 #' Optionnally, the results of the analysis may be saved
 #' 
-#+ savechunk
+#+ savechunkparams
 
 savefname <- "analysis_results.rda"
 # save in the data dir
@@ -147,7 +150,7 @@ if (outresults) p_sex
 #'
 #+ age, warning=FALSE, fig.cap="Age"  
 tb_age <- summary(tdf$Age)
-if (outresults) pander(sum_age)
+if (outresults) pander(tb_age)
 p_age <- local({
         nc <- nclass.FD(tdf$Age[!is.na(tdf$Age)])
         ggplot(tdf, aes(Age)) + geom_histogram(bins=nc)
@@ -173,7 +176,28 @@ if (outresults) p_age_sex
 #' * Age Status
 #' 
 
+ 
+
 #+ Agestatus
+
+tb_agestat <- local({
+        # all values
+        tb_agestat <-table(tdf$Agestat)
+        # all known values
+        tb_agestat_k <- table(tdf[tdf$Agestat != 'Ukn', "Agestat"])[1:3]
+        tb_agestat_kr <- prop.table(tb_agestat_k) # relative frequency
+        
+        tb_agestat_k <- rbind(tb_agestat_k, tb_agestat_kr) # bind absolute and relative frequency
+        row.names(tb_agestat_k) <- c( "Effectif", "Fréquence")
+        # retour
+        list(
+                all = tb_agestat,
+                known = tb_agestat_k
+        )
+
+})
+
+
 p_agestat_by <- list(
         none = ggplot(tdf, aes(Agestat)) + geom_bar(),
         
@@ -599,40 +623,49 @@ if (outresults) {
         pl_survived_by
 }
 
-
+#' -------------------------------------------------------------------------------------------------------
 #' 
 #' Saving results {#saveresults}
 #' ==================
 #' 
-#' Optionnally, the results of the analysis may be saved
+#' Optionnally, the results of the analysis may be saved for the final report phase
 #' 
+
+
 
 #+ savechunk
 
-# temporary (testing)
-savefname <- "analysis_results.rda"
-# save in the data dir
-savedir <- datadir
+timesave <- format(Sys.Date(), '%d %B %Y')
+
+listsave = c(
+        # time of save
+        "timesave",
+        # main data 
+        "tdf", 
+        # sex
+        "tb_sex", "p_sex" ,
+        #age, 
+        #agestat
+        "tb_age", "tb_agestat",
+        "p_age", "p_age_sex","p_agestat_by",
+        # famly
+        "p_famly",
+        # pclass
+        "tb_pclass", "p_pclass", 
+        "p_age_by", "p_deck",
+        # embark
+        "tb_embark", "p_embark",
+        "tb_fare", "p_fare",
+        ### survival
+        "tb_survived", "p_survived",
+        "tb_survived_by", "p_survived_by",
+        "p_age_survived",
+        "survived_age_sex_class_f_p",
+        "pl_survived_by"
+)
+
+if (saveresults) save(list = listsave, 
+                      file = file.path(savedir, savefname) )
 
 
-# example
-obja <- 1:20
-objb <- letters[obja]
-objc <- 1 / obja
 
-obja
-objb
-objc
-
-save(list = c("obja","objb","objc" ), file = file.path(savedir, savefname))
-
-remove(list = c("obja", "objb", "objc" ))
-obja
-objb
-objc
-
-load(file = file.path(savedir, savefname))
-
-obja
-objb
-objc
