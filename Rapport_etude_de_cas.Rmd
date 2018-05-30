@@ -125,6 +125,29 @@ displaygraph <- function(one.graph,
         }
 }
 
+# for display several ggplots or lists of ggplots as one arrangeGrob call
+
+moklist <- function(lisobj) {
+        test <- function(obj) {"gg" %in% class(obj)}
+        
+        unlist(
+                lapply(lisobj, 
+                       FUN = function(x){
+                               if (test(x)){
+                                       list(x)
+                               }else{x}
+                       }
+                ),
+                recursive = FALSE
+        )
+}
+
+
+
+
+
+
+
 # show proportion as %
 as.percent <- function(prop, digits = 0, suffix = "%", sep = " ") 
         paste(100 * round(prop, digits = digits + 2), 
@@ -196,7 +219,13 @@ Ces passagers voyagent le plus souvent seuls, mais peuvent aussi être accompagn
 
 ### Classes de tarif
 
-Les passagers se répartissent en 3 classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r tb_pclass[2,3]` )
+Les passagers se répartissent en 3 classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r tb_pclass[2,3]` ).\
+Les passagers de la 3è classe sont aussi les plus jeunes globalement.
+
+```{r}
+p_age_by$agebox
+```
+
 
 
 ## La survie des passagers
@@ -226,28 +255,44 @@ displaygraph(p_sex)
 
 #### Age, Statut lié à l'âge (Age, Agestatus)
 
-```{r anx_age}
+```{r anx_age, fig.width=w.11, fig.asp=a.11}
 pander(tb_age)
-p_age
-p_age_sex
-p_agestat_by
 
-arrangeGrob()
+local({
+        gr <- arrangeGrob(
+                grobs = unlist(
+                        list(p_age), # faire une liste de ggplots
+                        list(p_age_sex), # faire une liste de ggplots
+                        p_agestat_by), # est déjà une liste de ggplots
+                ncol = 3)
+        displaygraph(gr)
+})
+
 ```
 
 #### Groupe familial
 
 Remarque : la variable Famly a été dréée par l'addition des variables Sibsp et Parch
 
-```{r anx_famly, fig.show = "hold"}
+```{r anx_famly, fig.show = "hold", fig.width=w.11, fig.asp=a.11}
 p_famly$famly
+
 ```
 
 #### Passenger Class (Pclass)
 
 ```{r anx_pclass}
-
+pander(tb_pclass)
+p_pclass
 
 ```
+
+```{r}
+p_age_by$agebox
+
+```
+
+
+
 
 
