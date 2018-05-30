@@ -1,6 +1,6 @@
 ---
 title: 'Etude de cas *Titanic*'
-subtitle: "Rapport final"
+subtitle: "Rapport final - Proposition de Corrigé"
 author:  "Bruno Fischer Colonimos"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 # header-includes: \usepackage{graphicx} # for unmodded template
@@ -166,10 +166,11 @@ savefname <- "analysis_results.rda"
 load(file=file.path(savedir, savefname))
 ```
 
--------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
 
 Synthèse
 ========
+A l'aide de graphes et de tables, ce travail précise qui étaient les passagers du _Titanic_, et quantifie les différences entre eux. AU cours de la deuxième partie, on met en évidence l'influence majeure de trois variables , concernant la survie des passagers. L'influence des deux premières (l'âge et le sexe) n'est pas surprenante. L'ampleur de l'influence de la troisième (la classe de tarif) est plus inattendue.
 
 -------------------------------------------------------------------------------------------------------
 
@@ -185,7 +186,7 @@ L'objectif de ce travail est, à partir des données publiées par _kaggle_, de 
 ## Les données
 
 Le site _Kaggle_ a publié un ensemble de données concernant `r nrow(tdf)` passagers. Il s'agit donc d'un échantillon (de grande taille), puique le vaisseau a embarqué  1316 passagers. La méthode de sélection de cet échantillon n'est pas connue.\ 
-Les données sont dans l'ensemble très complètes, les deux exceptions les plus notables étant l'âge (`r tb_age[7]` données manquantes soit `r as.percent(100 * tb_age[7] / nrow(tdf))`) et le numéro de cabine (`r sum(tdf$Cabin == "")` manquants soit `r as.percent(sum(tdf$Cabin == "")/nrow(tdf))`) 
+Les données sont dans l'ensemble très complètes, les deux exceptions les plus notables étant l'âge (`r tb_age[7]` données manquantes soit `r as.percent(tb_age[7] / nrow(tdf))`) et le numéro de cabine (`r sum(tdf$Cabin == "")` manquants soit `r as.percent(sum(tdf$Cabin == "")/nrow(tdf))`) 
 
 ## Les passagers
 
@@ -215,84 +216,164 @@ local({
 ```
 
 
-Ces passagers voyagent le plus souvent seuls, mais peuvent aussi être accompagnés d'un "groupe familial" d'une taille allant jusqu'à 10 autres passagers^[Certains passagers de première classe voyagent également avec une partie de leurs domestiques].
+Ces passagers voyagent le plus souvent seuls (`r as.percent(tb_class_by$gsize_p[1])`), mais peuvent aussi être accompagnés d'un "groupe familial" d'une taille allant jusqu'à 10 autres passagers^[Certains passagers de première classe voyagent également avec une partie de leurs domestiques].
 
 ### Classes de tarif
 
-Les passagers se répartissent en 3 classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r tb_pclass[2,3]` ).\
-Les passagers de la 3è classe sont aussi les plus jeunes globalement.
+Les passagers se répartissent en trois classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r as.percent(tb_pclass[2,3])` ).\
+Les passagers de la 3è classe sont aussi globalement les plus jeunes, ce qui s'explique par la présence  en 3^ème^ classe d'une proportion d'enfants plus élevée, mais également d'une proportion moindre de personnes d'âge mûr.
+
+La 3ème classe se distingue aussi par
+
+* encore plus de personnes voyageant seules (`r as.percent(tb_class_by$gsize_pclass_p[3, 1] )`, contre `r as.percent(tb_class_by$gsize_pclass_p[1, 1] )` et `r as.percent(tb_class_by$gsize_pclass_p[2, 1] )`)
+* et simultanément plus de familles de 4 personnes et plus (`r as.percent(tb_class_by$gsize_pclass_p[3, 3]) `, contre `r as.percent(tb_class_by$gsize_pclass_p[1, 3]) ` et `r as.percent(tb_class_by$gsize_pclass_p[2, 3]) ` pour les autres classes)).
+
+D'autre part, la proportion de femmes au sein de la 3è classe est aussi plus faible (`r as.percent(tb_class_by$sex_p[3,1])` contre `r as.percent(tb_class_by$sex_p[2,1])` et `r as.percent(tb_class_by$sex_p[2,1])` dans les classes 2 et 1 )
+
+```{r, fig.width=w.11, fig.asp=a.34}
+local({
+        # lgrob = list(
+        #         p_age_by$sex,
+        #         p_age_by$agebox,
+        #         p_age_by$age,
+        #         p_age_by$famsize_class
+        # )
+        
+        gr <- arrangeGrob( p_age_by$sex,
+                p_age_by$agebox,p_age_by$age,
+                p_age_by$famsize_class,
+                          ncol = 2 , 
+                          top = textGrob("Classe et caractérisiques démographiques"))
+        grid.newpage()
+        grid.draw(gr) # problème ici
+})
+
+```
+
+### Classes de tarif et pont
+
+On dispose de données très partielles sur les numéros de cabine. Ces derniers nous permettent de situer le pont correpondant à la cabine. Cette distribution semble montrer que les passagers de première et seconde classe étaint logés sur des ponts plus élevés (et donc plus proches des canots de sauvetage) que ceux de la troisième classe, ce qui correspond aux plans de pont publiés^[Encyclopedia Titanica]
+```{r}
+p_deck$by_class
+
+```
+
+### Port d'embarquement
+
+La plupart `r as.percent(tb_embark$df[2, 1])` des passagers ont embarqué à Southampton (S).
+Toutefois, c'est beaucoup moins vrai pour les passagers de première classe, en particulier pour les femmes de la première class, dont `r as.percent(tb_embark$ft2[1, 1])` ont enbarqué à Southampton, et `r as.percent(tb_embark$ft2[1, 2])` à Cherbourg.
 
 ```{r}
-p_age_by$agebox
+grid.newpage()
+grid.draw(
+p_embark$by_sex_class
+)
 ```
+
+### Prix du voyage
+
+Le prix global du voyage fourni dans les données semble correspondre au prix total payé pour l'ensemble des voyageurs partageant un même billet.
+
+On note l'extrême variabilité du prix en première classe.
+
+```{r fare, fig.width=w.23, fig.asp= a.12}
+
+p_fare$class_box
+```
+
+```{r debug}
+# 
+# as.percent <- function(x) paste0("!!!!_", x)
+
+```
+
 
 
 
 ## La survie des passagers
 
-## conclusion
+Globalement, seuls `r as.percent(tb_survived[1])` des passagers ont survécu au naufrage.
 
----------------------------------------------------------------------------------------------------------
+Les deux facteurs qui sont le plus associés à la survie des passagers sont
 
-# Annexe
+* le sexe : le taux de survie global des femmes est `r as.percent(tb_survived_by$sex[2,1])`, celui des hommes est de `r as.percent(tb_survived_by$sex[2,2])`
+* la classe de tarif : tous sexes confondus, les taux de survie des passagers sont: 
+    * en première classe : `r as.percent(tb_survived_by$class[2,1])`
+    * en seconde classe : `r as.percent(tb_survived_by$class[2,2])`
+    * en troisième classe : `r as.percent(tb_survived_by$class[2,3])`
+* L'âge: le taux global de survie des enfants est de `r as.percent(tb_survived_by$age[2, 2])` alors que celui des des adolescents est `r as.percent(tb_survived_by$age[3, 2])`, proche de celui des adultes. Comme le taux de survie des femmes, celui des enfants varie fortement entre les classes: très fort en première et seconde classe, (`r survived_age_sex_class_f_p$surv_class_age[2, 2]` % et `r survived_age_sex_class_f_p$surv_class_age[6, 2]` % ) il n'est que de (`r survived_age_sex_class_f_p$surv_class_age[10, 2]` % en troisième classe
 
-## Les données
+Ces variables peuvent avoir des effets combinés, et il est donc nécessaire de considérer séparément les combinaisons sexe-classe-âge. Le graphique ci-dessous présente certaines de ces comparaisons.
 
-## Résultats statistiques bruts
-
-### Les Passagers
-
-
-
-####  Sexe
-
-```{r anx_sex}
-pander(tb_sex)
-
-displaygraph(p_sex)
-
-```
-
-#### Age, Statut lié à l'âge (Age, Agestatus)
-
-```{r anx_age, fig.width=w.11, fig.asp=a.11}
-pander(tb_age)
+```{r survie, fig.width= w.11, fig.asp= a.12}
+# p_survived_by
 
 local({
-        gr <- arrangeGrob(
-                grobs = unlist(
-                        list(p_age), # faire une liste de ggplots
-                        list(p_age_sex), # faire une liste de ggplots
-                        p_agestat_by), # est déjà une liste de ggplots
-                ncol = 3)
-        displaygraph(gr)
+        gr <- arrangeGrob( p_survived_by$sex,
+                p_survived_by$class,
+                p_survived_by$class_sex,
+                          ncol = 3 , 
+                          top = textGrob("Survie, Classe et Sexe"))
+        grid.newpage()
+        grid.draw(gr) # problème ici
 })
 
 ```
+On voit clairement que:
 
-#### Groupe familial
+#. Il y a eu une influence globale indéniable de la classe de tarif. Les modalités précises de la relation avec la survie semblent complexes (des hypothèses différentes ont été avancées) et n'ont pas du tout été étudiées ici. Il semble probable que le placement des passagers dans le navire (le pont) ait pu jouer un rôle.
+#. la politique du capitaine Smith ("Les femmes et les enfants d'abord") a porté ses fruits dans une certaine mesure, puisque les femmes ont eu eu un bien meilleur taux de survie
+#. dans les différentes classe, les situations semblent très diverses: en première classe, `r survived_age_sex_class_f_p$surv_class_sex_age[1, 2]` % des femmes adultes ont survécu, contre seulement `r survived_age_sex_class_f_p$surv_class_sex_age[17, 2]` % des femmes adultes de la troisième classe.
+#. Les enfants ont également bénéficié des instructions du capitaine. Toutefois, comme pour les femmes, 'influence des la variable "classe" a eu un effet désastreux sur la survie des enfants de la troisième classe (les plus nombreux).
 
-Remarque : la variable Famly a été dréée par l'addition des variables Sibsp et Parch
+Les tableax suivants présentent les taux de survie associés aux différentes combinaisons de ces variables
 
-```{r anx_famly, fig.show = "hold", fig.width=w.11, fig.asp=a.11}
-p_famly$famly
-
-```
-
-#### Passenger Class (Pclass)
-
-```{r anx_pclass}
-pander(tb_pclass)
-p_pclass
-
-```
-
-```{r}
-p_age_by$agebox
+```{r tabs}
+pander(survived_age_sex_class_f_p$age_p, caption = "Survie et Age")
+pander(survived_age_sex_class_f_p$surv_class_age, caption = "Survie et Sexe" )
+pander(survived_age_sex_class_f_p$surv_class_sex_age, caption = "Survie, Sexe et Age")
 
 ```
 
 
+## Conclusion
+
+Au cours de cette étude, nous avons pu mieux connaître les passagers du titanic, et nous avons pu constater l'influence majeure sur la survie de ce passagers des 3 variables explicatives Sex, Age et Classe de tarif. L'influence des deux premières étaient attendue. L'ampleur de l'association avec la classe est surprenante et demande à être expliquée.
 
 
+--------------------------------------------------------------------------------------------
 
+# Annexe
+
+## Les données {#variables}
+
+On considère ici les variables suivantes:
+
+
+Variables                 type        Values                Treatment
+------------------------  --------    -------------------   ------------------
+__Demographic variables__
+    * Sex                  String       female ; male       Make factor
+    * Age                  numeric                          many NA's
+    * Agestat              factor      enfant/ado/adulte    new:
+__Family context__
+    * SibSp                numeric                          Combined ->
+    * Parch                numeric                          Combined ->
+    * Famly                numeric                          new: SibSp + Parch
+    * groupsize            string       1_p, 3_moins, 4_plus
+__Relationship to ship__
+    * Pclass                             1,2,3              Make factor
+    * ticket                            ticket number       not used
+    * Fare                 numeric
+    * Cabin                             Cabin number        used -> Deck
+    * Deck                 String                           new (from Cabin)
+    * Embark               String       C = Cherbourg,       make Factor   
+                                        Q = Queenstown, 
+                                        S = Southampton
+__Survival__              
+    * survived             binary        0/1                Make factor
+
+
+## Résultats statistiques bruts 
+
+Disponibles à part.

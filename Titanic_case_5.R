@@ -237,6 +237,8 @@ p_famly <- list(
                 labs(x = "Family members on Board")
 )
 
+tdf$groupsize = ifelse(tdf$Famly < 1, "1_p.", 
+                     ifelse(tdf$Famly <= 3, "3_moins", "4_plus")) 
 
 if (outresults) p_famly$famly
 
@@ -270,6 +272,17 @@ if (outresults) p_pclass
 
 
 #' ### Passengers demographics by class
+#' 
+
+tb_class_by <- list(
+        sex = table( tdf$Pclass, tdf$Sex ),
+        sex_p = prop.table( table( tdf$Pclass, tdf$Sex ), margin = 1),
+        gsize = table(tdf$groupsize),
+        gsize_p = prop.table(table(tdf$groupsize)),
+        gsize_pclass = table( tdf$Pclass, tdf$groupsize ),
+        gsize_pclass_p = prop.table(table(tdf$Pclass, tdf$groupsize), margin = 1)
+)
+
 
 #+ p_age_by, fig.cap = "Passengers deographics characteristics by class"
 p_age_by <- local({
@@ -279,7 +292,7 @@ p_age_by <- local({
                 sex = ggplot(tdf, aes(Sex)) + 
                         geom_bar(aes(y = ..prop.., fill = Pclass, group=Pclass)) + 
                         facet_grid(Pclass ~ .) +
-                        labs(y = "Proportion", title = "Sex by Class") + 
+                        labs(y = "Proportion") + 
                         ggnolegend,
                 
                 age = ggplot(tdf, aes(Age)) + 
@@ -296,6 +309,16 @@ p_age_by <- local({
                         facet_grid(Pclass ~ .)+ 
                         scale_x_continuous(breaks=seq(0,10,by=2)) +
                         ggnolegend,
+                
+                famsize = ggplot(data = tdf, mapping = aes(Pclass,  fill= Pclass)) +
+                        geom_bar() + facet_grid(factor(groupsize) ~ . , switch = "both")
+                + ggnolegend,
+                
+                famsize_class = ggplot(data = tdf, mapping = aes(  fill= Pclass)) +
+                        geom_bar(aes(groupsize, y = ..prop.., group = Pclass)) + 
+                        facet_grid(factor(Pclass) ~ . , switch = "both") +
+                        ggnolegend ,
+                
                 by_famly = ggplot(data = tdf, mapping = aes(Pclass,  fill= Pclass)) + 
                         geom_bar() +
                         facet_grid(factor(Famly) ~ .)+
@@ -424,7 +447,7 @@ p_fare <- local({
                         geom_histogram(aes(Fare, y=..density.., 
                                            fill=Pclass), bins = ncf) +
                         facet_grid(Pclass ~.) + ggnolegend,
-                class_box <- ggplot(tdf) + 
+                class_box = ggplot(tdf) + 
                         geom_boxplot(aes(Pclass,Fare, 
                                          fill = Pclass), color = "grey50") + 
                         scale_x_discrete(limits = rev(levels(tdf$Pclass))) +
@@ -476,7 +499,8 @@ if (outresults) p_survived
 tb_survived_by <- list( sex =prop.table(table(tdf$Survived, tdf$Sex),
                              margin = 2),
                         class =prop.table(table(tdf$Survived, tdf$Pclass),
-                                          margin = 2)
+                                          margin = 2),
+                        age = prop.table(table( tdf$Agestat, tdf$Survived), margin = 1)
                         )
 
 if (outresults) {pander(tb_survived_by, digits=2,
@@ -569,6 +593,10 @@ survived_age_sex_class_f_p <-  local({
                 attr(ft, which = "col.vars") <- list(c("Number", "% Survived")) #substitute columns
                 ft
         }
+        
+        #age-survival table
+        age <- prop.table(table( tdf$Agestat, tdf$Survived), margin = 1)
+        
         # flat table suvived class * sex * agestat
         agesex_class_f <- ftable(tdf$Pclass,tdf$Sex,tdf$Agestat, tdf$Survived)
         agesex_class_f_p <- modifytable(agesex_class_f)
@@ -577,9 +605,14 @@ survived_age_sex_class_f_p <-  local({
         age_class_f <- ftable(tdf$Pclass,tdf$Agestat, tdf$Survived)
         age_class_f_p <- modifytable(age_class_f)
         
-        list(surv_class_sex_age = agesex_class_f_p,
-             surv_class_age = age_class_f_p)
+        list(
+                age_p = age,
+                surv_class_sex_age = agesex_class_f_p,
+                surv_class_age = age_class_f_p)
 })
+
+
+
 
 if (outresults) {pander(survived_age_sex_class_f_p, digits=2, 
                         caption = "Survival by  Class, Sex , Age ")
@@ -652,6 +685,7 @@ listsave = c(
         "p_famly",
         # pclass
         "tb_pclass", "p_pclass", 
+        "tb_class_by",
         "p_age_by", "p_deck",
         # embark
         "tb_embark", "p_embark",

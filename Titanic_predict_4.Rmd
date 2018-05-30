@@ -60,6 +60,7 @@ Preliminary code
 # Global options
 globalseed <- 98765 # unique seed for reproducibility
 percenttraining <- 0.75 # percentage of 'trainingset' to put in truetrainingset
+<<<<<<< HEAD
 nfolds <- 10 # k = number of folds fork-folds crossvalidation
 bwtheme <- TRUE
 specialpalette <- TRUE # controls the colour of the plots
@@ -67,6 +68,9 @@ showarning <- TRUE # show warnings (deleted empty rows...)
 datmis <- "Ukn"
 base_cache <- TRUE
 stk_cache <- FALSE
+=======
+nfolds <- 5 # k = number of folds fork-folds crossvalidation
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 ```
 
 
@@ -79,7 +83,19 @@ stk_cache <- FALSE
 ## Libraries and auxiliary code (install before running)
 
 (Not fully echoed here)
+<<<<<<< HEAD
 `
+=======
+
+```{r, echo = FALSE}
+# adjust Gggplot2 theme and color palette
+bwtheme <- TRUE
+specialpalette <- TRUE # controls the colour of the plots
+showarning <- TRUE # show warnings (deleted empty rows...)
+datmis <- "Ukn"
+```
+
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 
 ```{r libs, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
 # libraries
@@ -356,6 +372,7 @@ validationset <- predict(preProcValues, validationset)
 namecol <- colnames(trainingset)
 namecolp <- namecol[-1]
 
+<<<<<<< HEAD
 # function to do the products
 makeprods <- function(basevar, # the name (string) of the variable to multiply
                       prodstodo, # vector of names of the columns by which to multiply  
@@ -412,12 +429,22 @@ validationset <- makeinter(validationset)
 flc <- findLinearCombos(trainingset[-1])
 trainingset <- trainingset[ ,-flc$remove]
 validationset <- validationset[ ,-flc$remove]
+=======
+makeprods <- function(basevar, prodstodo) {
+        listp <- lapply
+}
+
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 ```
 
 
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 Prediction attempts
 ====================
 
@@ -496,7 +523,11 @@ Model Building
 
 ### KNN
 
+<<<<<<< HEAD
 ```{r modelbuildknn, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildknn, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # Knn
 # 
@@ -536,7 +567,11 @@ recordmod$new(Name = "KNN",
 
 ### KNN-PCA
 
+<<<<<<< HEAD
 ```{r modelbuildknn_pca, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildknn_pca, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # Knn
 # 
@@ -577,7 +612,11 @@ recordmod$new(Name = "KNN_PCA",
 
 ### Random Forest
 
+<<<<<<< HEAD
 ```{r modelbuildrf, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildrf, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # Random Forests
 #  
@@ -618,6 +657,7 @@ recordmod$new(Name = "RF",
 
 
 
+<<<<<<< HEAD
 ### Random Forest 2
 
 ```{r modelbuildrf2, cache=base_cache, dependson="dataclean1"}
@@ -664,6 +704,11 @@ recordmod$new(Name = "RF",
 ### Random Forest + PCA
 
 ```{r modelbuildrf_pca, cache=base_cache, dependson="dataclean1"}
+=======
+### Random Forest + PCA
+
+```{r modelbuildrf_pca, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # Random Forests - PCA
 #  
@@ -705,7 +750,11 @@ recordmod$new(Name = "RF_PCA",
 
 ### Glm
 
+<<<<<<< HEAD
 ```{r modelbuildglm, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildglm, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # glm
 # 
@@ -748,7 +797,11 @@ recordmod$new(Name = "GLM",
 
 ### Glm_pca
 
+<<<<<<< HEAD
 ```{r modelbuildglm_pca, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildglm_pca, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # glm
 # 
@@ -790,7 +843,11 @@ recordmod$new(Name = "GLM_PCA",
 
 ### Glm with interaction
 
+<<<<<<< HEAD
 ```{r modelbuildglm_int, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildglm_int, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # # _______________________________
 # # glm
 # # 
@@ -834,7 +891,11 @@ recordmod$new(Name = "GLM_PCA",
 
 ### LDA
 
+<<<<<<< HEAD
 ```{r modelbuildlda, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildlda, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # lda
 # 
@@ -873,7 +934,11 @@ recordmod$new(Name = "LDA",
 
 ### LDA-PCA
 
+<<<<<<< HEAD
 ```{r modelbuildlda_pca, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildlda_pca, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # lda
 # 
@@ -913,7 +978,11 @@ recordmod$new(Name = "LDA_PCA",
 
 ### QDA
 
+<<<<<<< HEAD
 ```{r modelbuildqda, cache=base_cache, dependson="dataclean1"}
+=======
+```{r modelbuildqda, cache=TRUE, dependson="dataclean1"}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # # _______________________________
 # # qda
 # #
@@ -953,7 +1022,11 @@ recordmod$new(Name = "LDA_PCA",
 
 ### Naive Bayes
 
+<<<<<<< HEAD
 ```{r modelbuildnb, cache=base_cache, dependson="dataclean1", warning=FALSE}
+=======
+```{r modelbuildnb, cache=TRUE, dependson="dataclean1", warning=FALSE}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # nb = naive Bayes
 # 
@@ -993,7 +1066,11 @@ recordmod$new(Name = "NB",
 
 ### Naive Bayes - PCA
 
+<<<<<<< HEAD
 ```{r modelbuildnb_pca, cache=base_cache, dependson="dataclean1", warning=FALSE}
+=======
+```{r modelbuildnb_pca, cache=TRUE, dependson="dataclean1", warning=FALSE}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # _______________________________
 # nb = naive Bayes - PCA
 # 
@@ -1064,6 +1141,7 @@ basemods <- data.frame(model= c(
 ```{r basepreds, warning=FALSE}
 # trainingset
 stk_train_df = data.frame(
+<<<<<<< HEAD
         Survived =trainingset$Survived,        
         # p_knn_pca = predict(modknn_pca, newdata = trainingset, type="prob"),
         p_rf = predict(modrf, newdata = trainingset, type="prob"),
@@ -1074,10 +1152,21 @@ stk_train_df = data.frame(
         # p_qda = predict(modqda, newdata = trainingset, type="prob"),
         #p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
 
+=======
+        p_knn = predict(modknn, newdata = trainingset, type="prob"),
+        p_rf = predict(modrf, newdata = trainingset, type="prob"),
+        p_glm = predict(modglm, newdata = trainingset, type="prob"),
+        # p_glm_int = predict(modglm_int, newdata = trainingset, type="prob"),
+        p_lda = predict(modlda_pca, newdata = trainingset, type="prob"),
+        # p_qda = predict(modqda, newdata = trainingset, type="prob"),
+        p_nb = predict(modnb_pca, newdata = trainingset, type="prob"),
+        Survived =trainingset$Survived
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 )
 
 # validationset
 stk_valid_df = data.frame(
+<<<<<<< HEAD
         Survived =validationset$Survived,       
         # p_knn_pca = predict(modknn_pca, newdata = validationset, type="prob"),
         p_rf = predict(modrf, newdata = validationset, type="prob"),
@@ -1094,17 +1183,36 @@ stk_valid_df = data.frame(
 
 The base predictions are generated as follows:
 ```{r, ref.label="basepreds", echo = TRUE, eval=FALSE}
+=======
+        p_knn = predict(modknn, newdata = validationset, type="prob"),
+        p_rf = predict(modrf, newdata = validationset, type="prob"),
+        p_glm = predict(modglm, newdata = validationset, type="prob"),
+        # p_glm_int = predict(modglm_int, newdata = validationset, type="prob"),
+        p_lda = predict(modlda, newdata = validationset, type="prob"),
+        # p_qda = predict(modqda, newdata = validationset, type="prob"),
+        p_nb = predict(modnb, newdata = validationset, type="prob"),
+        Survived =validationset$Survived
+)
+
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 
 ```
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 ### stacked predictions
 
 #### Combined With RF
 
+<<<<<<< HEAD
 ```{r modelbuild_stk_rf, cache=stk_cache}
+=======
+```{r modelbuild_stk_rf, cache=TRUE}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # stkrf Stacked preds with rf
 # 
 # parallel processing
@@ -1126,7 +1234,11 @@ registerDoSEQ()
 
 
 ```{r modelbuild_stk_rf_rec}
+<<<<<<< HEAD
 # record attempt
+=======
+# record attempt
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 cm <- confusionMatrix(data = predict( modl , newdata=stk_valid_df, type="raw"),
                 reference = validationset$Survived)
 
@@ -1145,7 +1257,11 @@ recordmod$new( i = 2,
 
 #### Combined With adaboost
 
+<<<<<<< HEAD
 ```{r modelbuild_stk_ada, cache=stk_cache}
+=======
+```{r modelbuild_stk_ada, cache=TRUE}
+>>>>>>> 69080e1b3065c01416ca63e0c9391253bf6c4856
 # stkrf Stacked preds with rf
 # 
 # parallel processing

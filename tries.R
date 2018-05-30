@@ -162,30 +162,22 @@ pl <- moklist(rpl)
 length(pl)
 
 
+mtr <- function(...) as.list(...)
+mtr(c(2,3), "a" , mean)
+
+mtr( 1:3, "x")
 
 
-pl[4]
-        
-        unlist
+tst <- function(n, ...) ...elt(n)
+tst(1, pi=pi*0:1, 2:4) ## [1] 0.000000 3.141593
+tst(2, pi=pi*0:1, 2:4) ## [1] 2 3 4
+try(tst(1)) # -> Error about '...' not containing an element.
 
-lisniv <-  list("a",
-              list("b", "c"),
-              list("x", "y", "z"),
-              list("u", list("v", "w"))
-              )
-length(lisniv)
-
-lisniv[[1]]
-lisniv <- lisniv[-1]
-
-li <- unlist(lisniv, 
-             recursive = FALSE)
-
-length(li)
-
-li[[1]]
-
-do.call(c, list (list( 3,4,5 ) , list( "a","b" )))
+tst.dl <- function(x, ...) ...length()
+tst.dl(1:10)    # 0  (because the first argument is 'x')
+tst.dl(4, 5)    # 1
+tst.dl(4, 5, 6) # 2  namely '5, 6'
+tst.dl(4, 5, 6, 7, sin(1:10), "foo"/"bar") # 5.  Note: no evaluation!
 
 
 
