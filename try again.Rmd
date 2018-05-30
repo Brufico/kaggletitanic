@@ -115,6 +115,17 @@ names(p_agestat_by)
 
 as.percent(0.7459)
 
+g <- ggplot(data = cars, aes(x = speed, y = dist)) + geom_point()
+
+class(g)
+class(gr)
+class(p_deck)
+
+is.list(g)
+"list" %in% class(g)
+"gg"  %in% class(g)
+"gg"  %in% class(gr)
+
 ```
 
 

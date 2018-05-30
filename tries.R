@@ -119,3 +119,74 @@ ggplot(data = tick, aes(x=Famsize)) +
 ggplot(data = tick, aes(x=Pclass)) + 
         geom_bar(aes( y = ..prop.., 
                       group = numtick)) + facet_grid(. ~ numtick, margins = TRUE)    
+
+
+
+
+#--------------------------------------------------------------------------------
+
+
+moklist <- function(lisobj) {
+        test <- function(obj) {"gg" %in% class(obj)}
+        
+        unlist(
+                lapply(lisobj, 
+                       FUN = function(x){
+                               if (test(x)){
+                                       list(x)
+                               }else{x}
+                       }
+                ),
+                recursive = FALSE
+        )
+}
+
+
+
+rpl <- list(p_age, p_age_sex, p_agestat_by)
+length(rpl)
+sapply(rpl, function(obj) {"gg" %in% class(obj)})
+
+pl <- moklist1(rpl)
+
+sapply(pl, function(obj) {"gg" %in% class(obj)})
+
+
+rpl <- list(p_age, 
+            p_age_sex, 
+            p_agestat_by)
+ppl <- moklist1(rpl)
+pl <- moklist(rpl)
+
+
+length(pl)
+
+
+
+
+pl[4]
+        
+        unlist
+
+lisniv <-  list("a",
+              list("b", "c"),
+              list("x", "y", "z"),
+              list("u", list("v", "w"))
+              )
+length(lisniv)
+
+lisniv[[1]]
+lisniv <- lisniv[-1]
+
+li <- unlist(lisniv, 
+             recursive = FALSE)
+
+length(li)
+
+li[[1]]
+
+do.call(c, list (list( 3,4,5 ) , list( "a","b" )))
+
+
+
+

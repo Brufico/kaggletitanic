@@ -269,7 +269,7 @@ p_pclass <- local({
 if (outresults) p_pclass
 
 
-#' ### Passengers deographics by class
+#' ### Passengers demographics by class
 
 #+ p_age_by, fig.cap = "Passengers deographics characteristics by class"
 p_age_by <- local({
