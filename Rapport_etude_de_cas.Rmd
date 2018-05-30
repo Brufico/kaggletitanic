@@ -13,22 +13,22 @@ classoption: a4paper
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
 footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
 output:
-  # pdf_document:
-  #   # template: test_latex_temp
-  #   template: latex_temp2.latex
-  #   highlight: monochrome
-  #   number_sections: yes
-  #   toc: yes
-  #   toc_depth: 4
-  #   # keep_tex: true
-  #   fig_caption: yes
-  #   keep_tex: yes
-    
-  html_document:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
     number_sections: yes
     toc: yes
     toc_depth: 4
+    # keep_tex: true
     fig_caption: yes
+    keep_tex: yes
+    
+  # html_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+  #   fig_caption: yes
 ---
 
 
