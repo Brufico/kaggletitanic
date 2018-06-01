@@ -13,22 +13,22 @@ classoption: a4paper
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
 footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
 output:
-  pdf_document:
-    # template: test_latex_temp
-    template: latex_temp2.latex
-    highlight: monochrome
-    number_sections: yes
-    toc: yes
-    toc_depth: 4
-    # keep_tex: true
-    fig_caption: yes
-    keep_tex: yes
-    
-  # html_document:
+  # pdf_document:
+  #   # template: test_latex_temp
+  #   template: latex_temp2.latex
+  #   highlight: monochrome
   #   number_sections: yes
   #   toc: yes
   #   toc_depth: 4
+  #   # keep_tex: true
   #   fig_caption: yes
+  #   keep_tex: yes
+    
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
 ---
 
 
@@ -146,12 +146,31 @@ moklist <- function(lisobj) {
 
 
 
-
+# Functions for showing results in Markdown text
 
 # show proportion as %
 as.percent <- function(prop, digits = 0, suffix = "%", sep = " ") 
         paste(100 * round(prop, digits = digits + 2), 
               suffix, sep = sep)
+
+
+# local assignments for  displaying values in the text
+
+loc <- list(
+        var = list(),
+        let = function(...) {loc$var <<- list(...)},
+        flush = function() loc$var <<-list()
+        )
+
+## usage
+# loc$var # initial state of values
+# loc$let(a = 3, b = 5) # set values
+# loc$var # get list key-value
+# loc$var$a # get value
+# loc$flush() # erase values
+# loc$var
+# loc$var$a
+
 
 ```
 
@@ -177,7 +196,7 @@ A l'aide de graphes et de tables, ce travail précise qui étaient les passagers
 Le naufrage du Titanic
 =======================
 
-## Le Désastre. Objectifs d'analyse
+## Le désastre. Objectifs d'analyse
 
 Le naufrage du paquebot Titanic au cours de son voyage inaugural, le 14 avril 1912, a laissé une trace durable dans la mémoire collective. Malgré deux enquêtes indépendantes, des interrogations subsistent.
 
@@ -185,13 +204,38 @@ L'objectif de ce travail est, à partir des données publiées par _kaggle_, de 
 
 ## Les données
 
+```{r, include=FALSE}
+loc$let(
+        age_nb = tb_age[7],
+        age_p = as.percent(tb_age[7] / nrow(tdf)),
+        cabin_nb = sum(tdf$Cabin == ""),
+        cabin_p = as.percent(sum(tdf$Cabin == "")/nrow(tdf))
+)
+
+```
+
+
 Le site _Kaggle_ a publié un ensemble de données concernant `r nrow(tdf)` passagers. Il s'agit donc d'un échantillon (de grande taille), puique le vaisseau a embarqué  1316 passagers. La méthode de sélection de cet échantillon n'est pas connue.\ 
-Les données sont dans l'ensemble très complètes, les deux exceptions les plus notables étant l'âge (`r tb_age[7]` données manquantes soit `r as.percent(tb_age[7] / nrow(tdf))`) et le numéro de cabine (`r sum(tdf$Cabin == "")` manquants soit `r as.percent(sum(tdf$Cabin == "")/nrow(tdf))`) 
+Les données sont dans l'ensemble très complètes, les deux exceptions les plus notables étant l'âge (`r loc$var$age_nb` données manquantes soit `r loc$var$age_p`) et le numéro de cabine (`r loc$var$cabin_nb` manquants soit `r loc$var$cabin_p`) 
 
 ## Les passagers
 
+```{r}
+loc$let(
+        homme_p = as.percent(tb_sex[2,2]),
+        min_age = round(12 * tb_age["Min."],0),
+        max_age = tb_age["Max."],
+        moy_age = round(tb_age["Mean"],2),
+        child_nb = tb_agestat$known[1,2],
+        child_p = as.percent(tb_agestat$known[2,2]),
+        teen_p = as.percent(tb_agestat$known[2,3])
+)
+
+```
+
+
 ### Age, sexe, groupe familial
-Dans l'échantillon de passagers observé, il y a 891 passagers, dont `r as.percent(tb_sex[2,2])` d'hommes. Tous les âges sont représentés (de `r round(12 * tb_age["Min."],0)` mois à  `r tb_age["Max."]` ans) et l'âge moyen est de `r tb_age["Mean"]` ans, l'âge le plus fréquent étant aux alentours de 20 ans, ce pic étant particulièrement marqué chez les hommes. (Remarque: de nombreux ages sont inconnus - cf. _supra_)
+Dans l'échantillon de passagers observé, il y a 891 passagers, dont `r loc$var$homme_p ` d'hommes. Tous les âges sont représentés (de `r loc$var$min_age` mois à  `r loc$var$max_age` ans) et l'âge moyen est de `r loc$var$moy_age` ans, l'âge le plus fréquent étant aux alentours de 20 ans, ce pic étant particulièrement marqué chez les hommes. (Remarque: de nombreux ages sont inconnus - cf. _supra_)
 
 Le _"statut lié à l'age"_ (enfants / adultes) jouera un rôle important dans la survie des passagers (cf. _infra_). En considérant les 3 classes d'âge suivantes
 
@@ -199,7 +243,7 @@ Le _"statut lié à l'age"_ (enfants / adultes) jouera un rôle important dans l
 * adolescents (14 à 19 ans, codé "teen"),
 * Adultes (20 ans et plus),
 
-on trouve que les `r tb_agestat$known[1,2]` enfants représentent `r round(tb_agestat$known[2,2],2) * 100`% des passagers dont l'âge est connu, et les adolescents `r round(tb_agestat$known[2,3],2) * 100`%
+on trouve que les `r loc$var$child_nb` enfants représentent `r loc$var$child_p` des passagers dont l'âge est connu, et les adolescents `r loc$var$teen_p`.
 
 ```{r, fig.width=w.34, fig.asp= a.12}
 # p_agestat_by$none + labs(x = "statut lié à l'âge")
@@ -207,12 +251,10 @@ on trouve que les `r tb_agestat$known[1,2]` enfants représentent `r round(tb_ag
 # displaygraph(p_age_sex)
 
 local({
-        gr <- arrangeGrob(p_age_sex, p_agestat_by$none + labs(x = "statut lié à l'âge"), 
+        gr <- arrangeGrob(p_age_sex, p_agestat_by$none + labs(x = "Statut lié à l'âge"), 
                           ncol = 2, top = textGrob("Age") )
         displaygraph(gr)
 })
-
-
 ```
 
 
@@ -220,15 +262,37 @@ Ces passagers voyagent le plus souvent seuls (`r as.percent(tb_class_by$gsize_p[
 
 ### Classes de tarif
 
-Les passagers se répartissent en trois classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r as.percent(tb_pclass[2,3])` ).\
+```{r}
+loc$let(
+        c3_p = as.percent(tb_pclass[2,3]),
+        c2_p = as.percent(tb_pclass[2,2]),
+        c1_p = as.percent(tb_pclass[2,1]),
+        seul3_p = as.percent(tb_class_by$gsize_pclass_p[3, 1] ),
+        seul1_p = as.percent(tb_class_by$gsize_pclass_p[1, 1] ),
+        seul2_p = as.percent(tb_class_by$gsize_pclass_p[2, 1] ),
+        f4_3p = as.percent(tb_class_by$gsize_pclass_p[3, 3]),
+        f4_1p = as.percent(tb_class_by$gsize_pclass_p[1, 3]),
+        f4_2p = as.percent(tb_class_by$gsize_pclass_p[2, 3]),
+        f_3p = as.percent(tb_class_by$sex_p[3,1]),
+        f_2p = as.percent(tb_class_by$sex_p[2,1]),               
+        f_1p =as.percent(tb_class_by$sex_p[1,1])
+)
+# loc$var$c3_p
+# loc$var$c2_p
+# loc$var$c1_p
+# loc$var
+
+```
+
+Les passagers se répartissent en trois classes de tarif, qui reflètent leur statut social . La 3^ème^ classe est la plus nombreuse (`r loc$var$c3_p` ).\
 Les passagers de la 3è classe sont aussi globalement les plus jeunes, ce qui s'explique par la présence  en 3^ème^ classe d'une proportion d'enfants plus élevée, mais également d'une proportion moindre de personnes d'âge mûr.
 
 La 3ème classe se distingue aussi par
 
-* encore plus de personnes voyageant seules (`r as.percent(tb_class_by$gsize_pclass_p[3, 1] )`, contre `r as.percent(tb_class_by$gsize_pclass_p[1, 1] )` et `r as.percent(tb_class_by$gsize_pclass_p[2, 1] )`)
-* et simultanément plus de familles de 4 personnes et plus (`r as.percent(tb_class_by$gsize_pclass_p[3, 3]) `, contre `r as.percent(tb_class_by$gsize_pclass_p[1, 3]) ` et `r as.percent(tb_class_by$gsize_pclass_p[2, 3]) ` pour les autres classes)).
+* encore plus de personnes voyageant seules (`r loc$var$seul3_p`, contre `r loc$var$seul2_p` et `r loc$var$seul1_p`)
+* et simultanément plus de familles de 4 personnes et plus (`r loc$var$f4_3p `, contre `r loc$var$f4_2p ` et `r loc$var$f4_1p ` pour les autres classes)).
 
-D'autre part, la proportion de femmes au sein de la 3è classe est aussi plus faible (`r as.percent(tb_class_by$sex_p[3,1])` contre `r as.percent(tb_class_by$sex_p[2,1])` et `r as.percent(tb_class_by$sex_p[2,1])` dans les classes 2 et 1 )
+D'autre part, la proportion de femmes au sein de la 3è classe est aussi plus faible (`r loc$var$f_3p` contre `r loc$var$f_2p` et `r loc$var$f_1p` dans les classes 2 et 1 )
 
 ```{r, fig.width=w.11, fig.asp=a.34}
 local({
@@ -239,29 +303,29 @@ local({
         #         p_age_by$famsize_class
         # )
         
-        gr <- arrangeGrob( p_age_by$sex,
-                p_age_by$agebox,p_age_by$age,
-                p_age_by$famsize_class,
+        gr <- arrangeGrob( p_age_by$sex + labs(x = "Sexe"),
+                p_age_by$agebox + labs(x = "Classe"),
+                p_age_by$age ,
+                p_age_by$famsize_class + labs(x= "Groupe familial"),
                           ncol = 2 , 
-                          top = textGrob("Classe et caractérisiques démographiques"))
+                          top = textGrob("Classe et caractéristiques démographiques"))
         grid.newpage()
         grid.draw(gr) # problème ici
 })
 
 ```
 
-### Classes de tarif et pont
+### Classes de tarif et placement dans le navire
 
-On dispose de données très partielles sur les numéros de cabine. Ces derniers nous permettent de situer le pont correpondant à la cabine. Cette distribution semble montrer que les passagers de première et seconde classe étaint logés sur des ponts plus élevés (et donc plus proches des canots de sauvetage) que ceux de la troisième classe, ce qui correspond aux plans de pont publiés^[Encyclopedia Titanica]
+On dispose de données très partielles sur les numéros de cabine. Ces derniers nous permettent de situer le pont (deck) correpondant à la cabine. Cette distribution semble montrer que les passagers de première et seconde classe étaint logés sur des ponts plus élevés (et donc plus proches des canots de sauvetage) que ceux de la troisième classe, ce qui correspond aux plans de pont publiés^[Encyclopedia Titanica]
 ```{r}
 p_deck$by_class
-
 ```
 
 ### Port d'embarquement
 
 La plupart `r as.percent(tb_embark$df[2, 1])` des passagers ont embarqué à Southampton (S).
-Toutefois, c'est beaucoup moins vrai pour les passagers de première classe, en particulier pour les femmes de la première class, dont `r as.percent(tb_embark$ft2[1, 1])` ont enbarqué à Southampton, et `r as.percent(tb_embark$ft2[1, 2])` à Cherbourg.
+Toutefois, c'est beaucoup moins vrai pour les passagers de première classe, en particulier pour les femmes de la première classe, dont `r as.percent(tb_embark$ft2[1, 1])` ont enbarqué à Southampton, et `r as.percent(tb_embark$ft2[1, 2])` à Cherbourg.
 
 ```{r}
 grid.newpage()
@@ -269,6 +333,7 @@ grid.draw(
 p_embark$by_sex_class
 )
 ```
+
 
 ### Prix du voyage
 
@@ -281,52 +346,69 @@ On note l'extrême variabilité du prix en première classe.
 p_fare$class_box
 ```
 
-```{r debug}
-# 
-# as.percent <- function(x) paste0("!!!!_", x)
+
+-----------------------------------------------------------------------------------------
+
+
+## La survie des passagers
+
+```{r}
+loc$let(
+        glob_p = as.percent(tb_survived[2]),
+        f_p = as.percent(tb_survived_by$sex[2,1]),
+        h_p = as.percent(tb_survived_by$sex[2,2]),
+        c1_p = as.percent(tb_survived_by$class[2,1]),
+        c2_p = as.percent(tb_survived_by$class[2,2]),
+        c3_p = as.percent(tb_survived_by$class[2,3]),
+        ch1_p = survived_age_sex_class_f_p$surv_class_age[2, 2],
+        ch2_p = survived_age_sex_class_f_p$surv_class_age[6, 2],
+        ch3_p = survived_age_sex_class_f_p$surv_class_age[10, 2]
+)
+# cat(paste0("loc$var$", names(loc$var)))
 
 ```
 
 
 
+Globalement, seuls `r loc$varglob_p` des passagers ont survécu au naufrage.
 
-## La survie des passagers
+Les trois facteurs qui sont le plus associés à la survie des passagers sont
 
-Globalement, seuls `r as.percent(tb_survived[1])` des passagers ont survécu au naufrage.
-
-Les deux facteurs qui sont le plus associés à la survie des passagers sont
-
-* le sexe : le taux de survie global des femmes est `r as.percent(tb_survived_by$sex[2,1])`, celui des hommes est de `r as.percent(tb_survived_by$sex[2,2])`
+* le sexe : le taux de survie global des femmes est `r loc$var$f_p`, celui des hommes est de `r loc$var$h_p`
 * la classe de tarif : tous sexes confondus, les taux de survie des passagers sont: 
-    * en première classe : `r as.percent(tb_survived_by$class[2,1])`
-    * en seconde classe : `r as.percent(tb_survived_by$class[2,2])`
-    * en troisième classe : `r as.percent(tb_survived_by$class[2,3])`
-* L'âge: le taux global de survie des enfants est de `r as.percent(tb_survived_by$age[2, 2])` alors que celui des des adolescents est `r as.percent(tb_survived_by$age[3, 2])`, proche de celui des adultes. Comme le taux de survie des femmes, celui des enfants varie fortement entre les classes: très fort en première et seconde classe, (`r survived_age_sex_class_f_p$surv_class_age[2, 2]` % et `r survived_age_sex_class_f_p$surv_class_age[6, 2]` % ) il n'est que de (`r survived_age_sex_class_f_p$surv_class_age[10, 2]` % en troisième classe
+    * en première classe : `r loc$var$c1_p `
+    * en seconde classe : `r loc$var$c2_p `
+    * en troisième classe : `r loc$var$c3_p`
+* L'âge: le taux global de survie des enfants est de `r as.percent(tb_survived_by$age[2, 2])` alors que celui des des adolescents est `r as.percent(tb_survived_by$age[3, 2])`, proche de celui des adultes. Comme le taux de survie des femmes, celui des enfants varie fortement entre les classes: très fort en première et seconde classe, (`r loc$var$ch1_p` % et `r loc$var$ch2_p` % ) il n'est que de `r loc$var$ch3_p` % en troisième classe
 
 Ces variables peuvent avoir des effets combinés, et il est donc nécessaire de considérer séparément les combinaisons sexe-classe-âge. Le graphique ci-dessous présente certaines de ces comparaisons.
 
-```{r survie, fig.width= w.11, fig.asp= a.12}
+```{r survie, fig.width= w.11, fig.asp= a.34}
 # p_survived_by
 
 local({
         gr <- arrangeGrob( p_survived_by$sex,
-                p_survived_by$class,
-                p_survived_by$class_sex,
-                          ncol = 3 , 
-                          top = textGrob("Survie, Classe et Sexe"))
+                           p_survived_by$class,
+                           p_survived_by$class_sex,
+                           p_survived_by$age,
+                           p_survived_by$class_age ,
+                           textGrob("Survie, Classe et Age"),
+                           # ncol = 3 , 
+                           layout_matrix = matrix(c(1,2,3,4,5,6), ncol=3, byrow = TRUE),
+                           top = textGrob("Survie, Classe et Sexe"))
         grid.newpage()
-        grid.draw(gr) # problème ici
+        grid.draw(gr) 
 })
 
 ```
 On voit clairement que:
 
 #. Il y a eu une influence globale indéniable de la classe de tarif. Les modalités précises de la relation avec la survie semblent complexes (des hypothèses différentes ont été avancées) et n'ont pas du tout été étudiées ici. Il semble probable que le placement des passagers dans le navire (le pont) ait pu jouer un rôle.
-#. la politique du capitaine Smith ("Les femmes et les enfants d'abord") a porté ses fruits dans une certaine mesure, puisque les femmes ont eu eu un bien meilleur taux de survie
+#. la politique du capitaine Smith ("Les femmes et les enfants d'abord") a porté ses fruits dans une certaine mesure, puisque les femmes ont eu eu un bien meilleur taux de survie.
 #. dans les différentes classe, les situations semblent très diverses: en première classe, `r survived_age_sex_class_f_p$surv_class_sex_age[1, 2]` % des femmes adultes ont survécu, contre seulement `r survived_age_sex_class_f_p$surv_class_sex_age[17, 2]` % des femmes adultes de la troisième classe.
-#. Les enfants ont également bénéficié des instructions du capitaine. Toutefois, comme pour les femmes, 'influence des la variable "classe" a eu un effet désastreux sur la survie des enfants de la troisième classe (les plus nombreux).
+#. Les enfants ont également bénéficié des instructions du capitaine. Toutefois, comme pour les femmes, l'influence des la variable "classe" a eu un effet désastreux sur la survie des enfants de la troisième classe (les plus nombreux).
 
-Les tableax suivants présentent les taux de survie associés aux différentes combinaisons de ces variables
+Les tableaux suivants présentent les taux de survie associés aux différentes combinaisons de ces variables
 
 ```{r tabs}
 pander(survived_age_sex_class_f_p$age_p, caption = "Survie et Age")

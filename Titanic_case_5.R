@@ -515,6 +515,9 @@ p_survived_by <- local({
                 sex = ggplot(tdf) + 
                         geom_bar(aes(Survived, y = ..prop.., group = Sex)) + 
                         facet_grid(Sex ~.),
+                age = ggplot(tdf) + 
+                        geom_bar(aes(Survived, y = ..prop.., group = Agestat)) + 
+                        facet_grid(. ~ Agestat ) ,
                 class = ggplot(tdf) + 
                         geom_bar(aes(Survived, y = ..prop.., group = Pclass, fill = Pclass)) + 
                         facet_grid(Pclass ~.) + ggnolegend,
@@ -522,6 +525,10 @@ p_survived_by <- local({
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass)) + 
                         facet_grid(Pclass ~ Sex) + ggnolegend,
+                class_age = ggplot(tdf) +
+                        geom_bar(aes(Survived, y = ..prop.., 
+                                     group = Pclass, fill = Pclass)) + 
+                        facet_grid(Pclass ~ Agestat) + ggnolegend,
                 class_sex_south = ggplot(tdf[tdf$Embarked == "S", ]) + 
                         geom_bar(aes(Survived, y = ..prop.., 
                                      group = Pclass, fill = Pclass))+ 
