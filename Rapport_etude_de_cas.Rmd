@@ -1,6 +1,6 @@
 ---
 title: 'Etude de cas *Titanic*'
-subtitle: "Rapport final - Proposition de Corrigé"
+subtitle: "Rapport final - Proposition de corrigé"
 author:  "Bruno Fischer Colonimos"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 # header-includes: \usepackage{graphicx} # for unmodded template
@@ -13,22 +13,22 @@ classoption: a4paper
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
 footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
 output:
-  # pdf_document:
-  #   # template: test_latex_temp
-  #   template: latex_temp2.latex
-  #   highlight: monochrome
-  #   number_sections: yes
-  #   toc: yes
-  #   toc_depth: 4
-  #   # keep_tex: true
-  #   fig_caption: yes
-  #   keep_tex: yes
-    
-  html_document:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
     number_sections: yes
     toc: yes
     toc_depth: 4
+    # keep_tex: true
     fig_caption: yes
+    keep_tex: yes
+    
+  # html_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+  #   fig_caption: yes
 ---
 
 
@@ -187,9 +187,9 @@ load(file=file.path(savedir, savefname))
 
 --------------------------------------------------------------------------------------------
 
-Synthèse
+Synthèse {-}
 ========
-A l'aide de graphes et de tables, ce travail précise qui étaient les passagers du _Titanic_, et quantifie les différences entre eux. AU cours de la deuxième partie, on met en évidence l'influence majeure de trois variables , concernant la survie des passagers. L'influence des deux premières (l'âge et le sexe) n'est pas surprenante. L'ampleur de l'influence de la troisième (la classe de tarif) est plus inattendue.
+A l'aide de graphes et de tables, ce travail précise qui étaient les passagers du _Titanic_, et quantifie les différences entre eux. Au cours de la deuxième partie, on met en évidence l'influence majeure de trois variables , concernant la survie des passagers. L'influence des deux premières (l'âge et le sexe) n'est pas surprenante. L'ampleur de l'influence de la troisième (la classe de tarif) est plus inattendue.
 
 -------------------------------------------------------------------------------------------------------
 
@@ -370,7 +370,7 @@ loc$let(
 
 
 
-Globalement, seuls `r loc$varglob_p` des passagers ont survécu au naufrage.
+Globalement, seuls `r loc$var$glob_p` des passagers ont survécu au naufrage.
 
 Les trois facteurs qui sont le plus associés à la survie des passagers sont
 
@@ -411,9 +411,9 @@ On voit clairement que:
 Les tableaux suivants présentent les taux de survie associés aux différentes combinaisons de ces variables
 
 ```{r tabs}
-pander(survived_age_sex_class_f_p$age_p, caption = "Survie et Age")
 pander(survived_age_sex_class_f_p$surv_class_age, caption = "Survie et Sexe" )
 pander(survived_age_sex_class_f_p$surv_class_sex_age, caption = "Survie, Sexe et Age")
+pander(survived_age_sex_class_f_p$age_p, caption = "Survie et Age")
 
 ```
 

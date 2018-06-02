@@ -4,7 +4,7 @@
 # install.packages(c( "pander", "caret", "tidyverse" , "ggplot2" ))
 library(knitr)
 library(pander)
-library(caret)
+# library(caret)
 library(ggplot2)
 library(dplyr)
 
@@ -126,8 +126,9 @@ ggplot(data = tick, aes(x=Pclass)) +
 #--------------------------------------------------------------------------------
 
 
-moklist <- function(lisobj) {
+moklist <- function(...) { # arguments may be gg_graphs or lists of graphs
         test <- function(obj) {"gg" %in% class(obj)}
+        lisobj <- list(...)
         
         unlist(
                 lapply(lisobj, 
@@ -147,37 +148,11 @@ rpl <- list(p_age, p_age_sex, p_agestat_by)
 length(rpl)
 sapply(rpl, function(obj) {"gg" %in% class(obj)})
 
-pl <- moklist1(rpl)
-
+pl <- moklist(p_age, p_age_sex, p_agestat_by)
+length(pl)
 sapply(pl, function(obj) {"gg" %in% class(obj)})
 
 
-rpl <- list(p_age, 
-            p_age_sex, 
-            p_agestat_by)
-ppl <- moklist1(rpl)
-pl <- moklist(rpl)
-
-
-length(pl)
-
-
-mtr <- function(...) as.list(...)
-mtr(c(2,3), "a" , mean)
-
-mtr( 1:3, "x")
-
-
-tst <- function(n, ...) ...elt(n)
-tst(1, pi=pi*0:1, 2:4) ## [1] 0.000000 3.141593
-tst(2, pi=pi*0:1, 2:4) ## [1] 2 3 4
-try(tst(1)) # -> Error about '...' not containing an element.
-
-tst.dl <- function(x, ...) ...length()
-tst.dl(1:10)    # 0  (because the first argument is 'x')
-tst.dl(4, 5)    # 1
-tst.dl(4, 5, 6) # 2  namely '5, 6'
-tst.dl(4, 5, 6, 7, sin(1:10), "foo"/"bar") # 5.  Note: no evaluation!
 
 
 
