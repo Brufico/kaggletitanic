@@ -1,0 +1,373 @@
+---
+title: 'Etude de cas *Titanic*'
+subtitle: "Résultats statistiques bruts"
+author:  "Bruno Fischer Colonimos"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+# header-includes: \usepackage{graphicx} # for unmodded template
+header-includes: \usepackage{float} # for fig.pos = 'H'
+fontsize: 12pt
+urlcolor: "blue"   ## external
+linkcolor: "red" ## internal
+documentclass: article
+classoption: a4paper
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm,footskip=1cm"
+footer: \thetitle \ \textemdash \ \thepage ## verify this (theTitle == thetitle)
+output:
+  pdf_document:
+    # template: test_latex_temp
+    template: latex_temp2.latex
+    highlight: monochrome
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    # keep_tex: true
+    fig_caption: yes
+    keep_tex: yes
+
+  # html_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   toc_depth: 4
+  #   fig_caption: yes
+---
+
+
+
+<!-- Some Inline HTML (CSS) , formatting tables -->
+
+<style>
+
+table {
+    width: 100%;
+    border-top-style: solid;
+    border-top-width: medium;
+    border-top-color: initial;
+    border-bottom-style: solid;
+    border-bottom-width: medium;
+    border-bottom-color: initial;
+}
+
+</style>
+
+<!-- End Inline HTML -->
+
+
+
+
+```{r setup0, include=FALSE}
+
+# Preliminary code
+# ================
+## Libraries and auxiliary code (install before running)
+
+### code config parameters
+
+# adjust Gggplot2 theme and color palette
+bwtheme <- TRUE
+specialpalette <- FALSE
+showarning <- FALSE
+datmis <- "Ukn"
+
+
+### Required packages (install before running)
+# libs_prep, echo =FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+library(knitr)
+library(pander)
+# library(caret)
+library(ggplot2)
+library(dplyr)
+library(grid)
+library(gridExtra)
+
+# Source preparatory code "preparation.R"
+# ========================
+
+## code config parameters
+# adjust (?) Gggplot2 theme and color palette
+bwtheme <- TRUE         # use bw theme
+specialpalette <- FALSE # use the special palette for color-blinds
+showarning <- FALSE     # show the warnings
+datmis <- "Ukn"         # Value to replace the NA's with 
+# Execution
+echo_code <- TRUE       # Echo the code chunks
+outresults <- TRUE      # Output the results (printing, etc)
+saveresults <- TRUE     # save the results in Rda file for reuse in report
+
+
+source("preparation.R")
+
+# Set aliases
+
+knitr::set_alias(w = "fig.width", a = "fig.asp")
+
+```
+
+```{r setup, echo = FALSE}
+# setup chunk : default options
+knitr::opts_chunk$set(echo = FALSE, fig.width = w.13, fig.asp = a.11 , fig.pos = 'H', fig.align = "center", fig.show = "hold", warning = showarning)
+```
+
+```{r morecode}
+displaygraph <- function(one.graph,
+                         windevice = NULL,
+                         width = 6,
+                         height = 5 ) {
+        if (is.null(windevice)) {
+                grid.newpage()
+                grid.draw(one.graph)
+        } else {
+                windows(width = width, height = height)
+                grid.newpage()
+                grid.draw(one.graph)
+                Sys.sleep(defsleep)
+                dev.off()
+        }
+}
+
+# for display several ggplots or lists of ggplots as one arrangeGrob call
+# 
+# moklist <- function(lisobj) {
+#         test <- function(obj) {"gg" %in% class(obj)}
+#         
+#         unlist(
+#                 lapply(lisobj, 
+#                        FUN = function(x){
+#                                if (test(x)){
+#                                        list(x)
+#                                }else{x}
+#                        }
+#                 ),
+#                 recursive = FALSE
+#         )
+# }
+
+
+moklist <- function(...) { # arguments may be gg_graphs or lists of graphs
+        test <- function(obj) {"gg" %in% class(obj)}
+        lisobj <- list(...)
+        
+        unlist(
+                lapply(lisobj, 
+                       FUN = function(x){
+                               if (test(x)){
+                                       list(x)
+                               }else{x}
+                       }
+                ),
+                recursive = FALSE
+        )
+}
+
+
+
+# Functions for showing results in Markdown text
+
+# show proportion as %
+as.percent <- function(prop, digits = 0, suffix = "%", sep = " ") 
+        paste(100 * round(prop, digits = digits + 2), 
+              suffix, sep = sep)
+
+
+# local assignments for  displaying values in the text
+
+loc <- list(
+        var = list(),
+        let = function(...) {loc$var <<- list(...)},
+        flush = function() loc$var <<-list()
+        )
+
+## usage
+# loc$var # initial state of values
+# loc$let(a = 3, b = 5) # set values
+# loc$var # get list key-value
+# loc$var$a # get value
+# loc$flush() # erase values
+# loc$var
+# loc$var$a
+
+
+```
+
+
+
+
+
+```{r data}
+# get the analyzed data
+savedir <- "data"
+savefname <- "analysis_results.rda"
+load(file=file.path(savedir, savefname))
+```
+
+--------------------------------------------------------------------------------------------
+
+Les Passagers
+=============
+
+
+Sexe
+----
+
+```{r anx_sex}
+pander(tb_sex)
+displaygraph(p_sex)
+
+```
+
+## Age, Statut lié à l'âge (Age, Agestatus)
+
+```{r anx_age, fig.width=w.11, fig.asp=a.12}
+pander(tb_age)
+
+local({
+        lgrob = moklist(p_age, p_age_sex, p_agestat_by )
+        gr <- arrangeGrob(
+                grobs = lgrob,
+                ncol = 3)
+        displaygraph(gr)
+})
+
+```
+
+## Groupe familial
+
+Remarque : la variable Famly a été dréée par l'addition des variables Sibsp et Parch
+
+```{r anx_famly, fig.show = "hold", fig.width=w.13, fig.asp=a.11}
+p_famly$famly
+
+pander(rbind(tb_class_by$gsize, tb_class_by$gsize_p) , caption = "")
+```
+
+## Classes de tarif (Pclass)
+
+```{r anx_pclass}
+pander(tb_pclass)
+p_pclass + labs( title = "")
+
+```
+
+```{r pclass_by, fig.width = w.11, fig.asp = a.11}
+
+pander(tb_class_by)
+
+local({
+        gr <- arrangeGrob(
+                grobs = p_age_by,
+                ncol = 3)
+        displaygraph(gr)
+})
+```
+
+
+### Classes de tarif et placement dans le navire
+
+```{r fig.width=w.11, fig.asp=a.13}
+local({
+        gr <- arrangeGrob(
+                grobs = p_deck,
+                ncol = 3)
+        displaygraph(gr)
+})
+
+```
+
+
+## Port d'embarquement
+
+
+```{r fig.width=w.11, fig.asp= a.12}
+pander(tb_embark)
+
+local({
+        gr <- arrangeGrob(
+                grobs = p_embark,
+                ncol = 3)
+        displaygraph(gr)
+})
+
+```
+
+
+## Prix du voyage (Fare)
+
+```{r fig.width=w.11, fig.asp= a.12}
+pander(tb_fare)
+
+local({
+        gr <- arrangeGrob(
+                grobs = p_fare,
+                ncol = 3)
+        displaygraph(gr)
+})
+
+```
+
+
+
+La survie
+==========
+
+
+## Survie
+
+```{r survie, fig.width= w.13, fig.asp= a.11}
+pander(tb_survived)
+
+p_survived
+
+# local({
+#         gr <- arrangeGrob(
+#                 p_survived,
+#                 ncol = 3)
+#         displaygraph(gr)
+# })
+
+```
+
+## Survie et caractéristiques démographiques
+
+```{r fig.width=w.11, fig.asp= a.11}
+pander(tb_survived_by, digits=2,
+                       caption = "Survival by Sex , class")
+local({
+        gr <- arrangeGrob(
+                grobs = p_survived_by,
+                ncol = 3)
+        displaygraph(gr)
+})
+```
+
+
+
+```{r fig.width=w.11, fig.asp= a.13}
+# pander(tb_survived_by, digits=2,
+#                        caption = "Survival by Sex , class")
+local({
+        gr <- arrangeGrob(
+                grobs = p_age_survived,
+                ncol = 3)
+        displaygraph(gr)
+})
+```
+
+
+
+```{r fig.width=w.11, fig.asp= a.34}
+pander(survived_age_sex_class_f_p, digits=2, 
+                        caption = "Survival by  Class, Sex , Age ")
+
+local({
+        gr <- arrangeGrob(
+                grobs = pl_survived_by,
+                ncol = 3)
+        displaygraph(gr)
+})
+
+```
+                        
+
+
+
+

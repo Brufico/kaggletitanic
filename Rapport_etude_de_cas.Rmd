@@ -414,7 +414,6 @@ Les tableaux suivants présentent les taux de survie associés aux différentes 
 pander(survived_age_sex_class_f_p$surv_class_age, caption = "Survie et Sexe" )
 pander(survived_age_sex_class_f_p$surv_class_sex_age, caption = "Survie, Sexe et Age")
 pander(survived_age_sex_class_f_p$age_p, caption = "Survie et Age")
-
 ```
 
 
